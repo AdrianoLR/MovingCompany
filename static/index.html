@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moving Company Booking</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .booking-form {
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .btn {
+            background-color: #4CAF50;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background-color: #45a049;
+        }
+        .booking-item {
+            padding: 1rem;
+            border: 1px solid #ddd;
+            margin-bottom: 1rem;
+            border-radius: 4px;
+            background-color: white;
+        }
+        .notification {
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+            display: none;
+        }
+        .notification.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .notification.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .furniture-section {
+            margin-top: 1rem;
+            padding: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .furniture-section h3 {
+            margin-bottom: 1rem;
+            font-weight: bold;
+        }
+        .furniture-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4">
+        <h1 class="text-3xl font-bold text-center my-8">Furniture Man Booking</h1>
+        
+        <!-- Notification -->
+        <div id="notification" class="notification"></div>
+        
+        <!-- Booking Form -->
+        <div class="booking-form bg-white">
+            <h2 class="text-2xl font-bold mb-4">Create New Booking</h2>
+            <form id="bookingForm" class="space-y-4">
+                <!-- Hidden token fields -->
+                <input type="hidden" id="tokenId" name="token_id" value="{{.TokenID}}">
+                <input type="hidden" id="token" name="token" value="{{.TokenString}}">
+                <div class="form-group">
+                    <label for="customer_name">Customer Name</label>
+                    <input type="text" id="customer_name" name="customer_name" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="phone">Phone</label>
+                    <input type="tel" id="phone" name="phone" required>
+                </div>
+                <div class="form-group">
+                    <label for="pickup_address">Pickup Address</label>
+                    <input type="text" id="pickup_address" name="pickup_address" required>
+                </div>
+                <div class="form-group">
+                    <label for="drop_address">Drop Address</label>
+                    <input type="text" id="drop_address" name="drop_address" required>
+                </div>
+                <div class="form-group">
+                    <label for="pickup_date">Pickup Date</label>
+                    <input type="datetime-local" id="pickup_date" name="pickup_date" required>
+                </div>
+
+                <!-- Furniture Section -->
+                <div class="furniture-section">
+                    <h3 class="text-xl">Furniture Items</h3>
+                    <div class="furniture-grid">
+                        <div class="form-group">
+                            <label for="chairs">Chairs</label>
+                            <input type="number" id="chairs" name="chairs" min="0" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="table_2_seats">Table (2 seats)</label>
+                            <input type="number" id="table_2_seats" name="table_2_seats" min="0" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="table_3_seats">Table (3 seats)</label>
+                            <input type="number" id="table_3_seats" name="table_3_seats" min="0" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="table_4_plus_seats">Table (4+ seats)</label>
+                            <input type="number" id="table_4_plus_seats" name="table_4_plus_seats" min="0" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="fridges">Fridges</label>
+                            <input type="number" id="fridges" name="fridges" min="0" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="washing_machines">Washing Machines</label>
+                            <input type="number" id="washing_machines" name="washing_machines" min="0" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="dryers">Dryers</label>
+                            <input type="number" id="dryers" name="dryers" min="0" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="dishwashers">Dishwashers</label>
+                            <input type="number" id="dishwashers" name="dishwashers" min="0" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="boxes">Boxes</label>
+                            <input type="number" id="boxes" name="boxes" min="0" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="pot_plants">Pot Plants</label>
+                            <input type="number" id="pot_plants" name="pot_plants" min="0" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="mattresses">Mattresses</label>
+                            <input type="number" id="mattresses" name="mattresses" min="0" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="bed_frames">Bed Frames</label>
+                            <input type="number" id="bed_frames" name="bed_frames" min="0" value="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="sofas">Sofas</label>
+                            <input type="number" id="sofas" name="sofas" min="0" value="0">
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn w-full">Create Booking</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Handle form submission
+        document.getElementById('bookingForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Disable all form inputs and button
+            const form = document.getElementById('bookingForm');
+            Array.from(form.elements).forEach(el => el.disabled = true);
+            
+            // Format the date to ISO string
+            const pickupDate = new Date(document.getElementById('pickup_date').value);
+            
+            // Format date to YYYY-MM-DDThh:mm:ss as required by the server
+            const formatDate = (date) => {
+                return date.getFullYear() + '-' + 
+                    String(date.getMonth() + 1).padStart(2, '0') + '-' + 
+                    String(date.getDate()).padStart(2, '0') + 'T' + 
+                    String(date.getHours()).padStart(2, '0') + ':' + 
+                    String(date.getMinutes()).padStart(2, '0') + ':' + 
+                    String(date.getSeconds()).padStart(2, '0');
+            };
+            
+            const formData = {
+                customer_name: document.getElementById('customer_name').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                pickup_address: document.getElementById('pickup_address').value,
+                drop_address: document.getElementById('drop_address').value,
+                pickup_date: formatDate(pickupDate),
+                furniture_items: {
+                    chairs: parseInt(document.getElementById('chairs').value),
+                    table_2_seats: parseInt(document.getElementById('table_2_seats').value),
+                    table_3_seats: parseInt(document.getElementById('table_3_seats').value),
+                    table_4_plus_seats: parseInt(document.getElementById('table_4_plus_seats').value),
+                    fridges: parseInt(document.getElementById('fridges').value),
+                    washing_machines: parseInt(document.getElementById('washing_machines').value),
+                    dryers: parseInt(document.getElementById('dryers').value),
+                    dishwashers: parseInt(document.getElementById('dishwashers').value),
+                    boxes: parseInt(document.getElementById('boxes').value),
+                    pot_plants: parseInt(document.getElementById('pot_plants').value),
+                    mattresses: parseInt(document.getElementById('mattresses').value),
+                    bed_frames: parseInt(document.getElementById('bed_frames').value),
+                    sofas: parseInt(document.getElementById('sofas').value)
+                },
+                // Include token if it exists
+                token: document.getElementById('token').value
+            };
+
+            fetch('/api/submit-booking', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(async response => {
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Server error: ${response.status} - ${errorText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Show success notification
+                const notification = document.getElementById('notification');
+                notification.style.display = 'block';
+                notification.className = 'notification success';
+                notification.textContent = 'Booking created successfully!';
+                
+                // Keep all form inputs disabled
+                Array.from(form.elements).forEach(el => el.disabled = true);
+                
+                // Remove the submit button
+                const submitBtn = form.querySelector('button[type="submit"]');
+                if (submitBtn) submitBtn.style.display = 'none';
+                
+                // Add a message to the form
+                const formMessage = document.createElement('div');
+                formMessage.className = 'text-center mt-4 text-lg font-bold text-green-600';
+                formMessage.textContent = 'Your booking has been submitted. Thank you!';
+                form.appendChild(formMessage);
+            })
+            .catch(error => {
+                // Show error notification
+                const notification = document.getElementById('notification');
+                notification.style.display = 'block';
+                notification.className = 'notification error';
+                notification.textContent = `Error creating booking: ${error.message}`;
+                
+                // Keep all form inputs disabled
+                Array.from(form.elements).forEach(el => el.disabled = true);
+                
+                // Remove the submit button
+                const submitBtn = form.querySelector('button[type="submit"]');
+                if (submitBtn) submitBtn.style.display = 'none';
+                
+                // Add a message to the form
+                const formMessage = document.createElement('div');
+                formMessage.className = 'text-center mt-4 text-lg font-bold text-red-600';
+                formMessage.textContent = 'There was an error submitting your booking. Please try again later.';
+                form.appendChild(formMessage);
+            });
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Moving Company</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        .admin-table th, .admin-table td {
+            padding: 0.75rem;
+            border: 1px solid #e2e8f0;
+            text-align: left;
+        }
+        .admin-table th {
+            background-color: #f8fafc;
+            font-weight: bold;
+        }
+        .admin-table tr:nth-child(even) {
+            background-color: #f8fafc;
+        }
+        .admin-table tr:hover {
+            background-color: #f1f5f9;
+        }
+        .status-select {
+            padding: 0.5rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            width: 100%;
+        }
+        .edit-btn {
+            background-color: #3b82f6;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .edit-btn:hover {
+            background-color: #2563eb;
+        }
+        .save-btn {
+            background-color: #22c55e;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .save-btn:hover {
+            background-color: #16a34a;
+        }
+        .cancel-btn {
+            background-color: #ef4444;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .cancel-btn:hover {
+            background-color: #dc2626;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold mb-8">Admin Dashboard</h1>
+        
+        <!-- Generate Booking Link Section -->
+        <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 class="text-2xl font-bold mb-4">Generate Booking Link</h2>
+            <div class="mb-4">
+                <label for="customer-email" class="block text-sm font-medium text-gray-700 mb-2">Customer Email</label>
+                <div class="flex">
+                    <input type="text" id="link" 
+                           class="flex-1 p-2 border rounded-l focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                           placeholder="Generate link">
+                    <button onclick="generateBookingLink()" 
+                            class="bg-blue-600 text-white px-4 py-2 rounded-r hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                        Generate Link
+                    </button>
+                </div>
+            </div>
+            <div id="link-result" class="mt-4 p-4 bg-gray-50 rounded hidden">
+                <div class="flex items-center">
+                    <label class="font-medium text-gray-700 mr-2">Booking Link:</label>
+                    <input type="text" id="booking-link" readonly 
+                           class="flex-1 p-2 border rounded-l bg-white" 
+                           onclick="this.select()">
+                    <button onclick="copyToClipboard('booking-link')" 
+                            class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-r">
+                        Copy
+                    </button>
+                </div>
+                <p class="mt-2 text-sm text-gray-500">This link will expire in 24 hours.</p>
+            </div>
+        </div>
+        
+        <!-- Bookings Table -->
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h2 class="text-2xl font-bold mb-4">Bookings Management</h2>
+            <div id="bookings-table" 
+                 hx-get="/api/bookings" 
+                 hx-trigger="load"
+                 hx-swap="innerHTML">
+                <p>Loading bookings...</p>
+                <!-- Bookings will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Function to generate a booking link
+        function generateBookingLink() {
+            
+            // Show loading state
+            const generateBtn = document.querySelector('button[onclick="generateBookingLink()"]');
+            const originalBtnText = generateBtn.textContent;
+            generateBtn.disabled = true;
+            generateBtn.innerHTML = '<span class="animate-spin">⏳</span> Generating...';
+            
+            // Call the API to generate the link
+            fetch('/api/generate-link', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Show the result
+                const resultDiv = document.getElementById('link-result');
+                const linkInput = document.getElementById('booking-link');
+                
+                // Use the full URL with host if available, otherwise construct it
+                const fullUrl = data.short_url_full 
+                    ? (window.location.protocol + '//' + data.short_url_full)
+                    : (window.location.origin + data.short_url);
+                    
+                linkInput.value = fullUrl;
+                resultDiv.classList.remove('hidden');
+                
+                // Auto-select the link for easy copying
+                linkInput.select();
+                
+                // Show success message
+                alert('Booking link generated successfully!');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to generate booking link. Please try again.');
+            })
+            .finally(() => {
+                // Reset button state
+                generateBtn.disabled = false;
+                generateBtn.textContent = originalBtnText;
+            });
+        }
+        
+        // Function to copy text to clipboard
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            element.select();
+            document.execCommand('copy');
+            
+            // Show feedback
+            const copyBtn = element.nextElementSibling;
+            const originalText = copyBtn.textContent;
+            copyBtn.textContent = 'Copied!';
+            setTimeout(() => {
+                copyBtn.textContent = originalText;
+            }, 2000);
+        }
+        
+        // Function to format the booking table
+        function formatBookingTable(bookings) {
+            // Get status display name
+            function getStatusText(status) {
+                switch (status) {
+                    case 0: return "Pending";
+                    case 1: return "Confirmed";
+                    case 2: return "In Progress";
+                    case 3: return "Completed";
+                    case 4: return "Cancelled";
+                    default: return "Unknown";
+                }
+            }
+        
+            return `
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Customer</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Pickup Address</th>
+                            <th>Drop Address</th>
+                            <th>Pickup Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${bookings.map(booking => {
+                            const isEditing = booking.isEditing || false;
+                            const pickupDate = new Date(booking.pickup_date);
+                            const formattedDate = !isNaN(pickupDate.getTime()) 
+                                ? pickupDate.toISOString().slice(0, 16)
+                                : new Date().toISOString().slice(0, 16);
+                            
+                            return `
+                            <tr id="booking-row-${booking.user_id}" data-booking-id="${booking.user_id}" data-pickup-date="${booking.pickup_date}">
+                                <td>
+                                    ${isEditing 
+                                        ? `<input type="text" class="w-full p-2 border rounded" value="${booking.customer_name}">`
+                                        : booking.customer_name}
+                                </td>
+                                <td>
+                                    ${isEditing 
+                                        ? `<input type="email" class="w-full p-2 border rounded" value="${booking.email}">`
+                                        : booking.email}
+                                </td>
+                                <td>
+                                    ${isEditing 
+                                        ? `<input type="tel" class="w-full p-2 border rounded" value="${booking.phone}">`
+                                        : booking.phone}
+                                </td>
+                                <td>
+                                    ${isEditing 
+                                        ? `<input type="text" class="w-full p-2 border rounded" value="${booking.pickup_address}">`
+                                        : booking.pickup_address}
+                                </td>
+                                <td>
+                                    ${isEditing 
+                                        ? `<input type="text" class="w-full p-2 border rounded" value="${booking.drop_address}">`
+                                        : booking.drop_address}
+                                </td>
+                                <td>
+                                    ${isEditing 
+                                        ? `<input type="datetime-local" class="w-full p-2 border rounded" value="${formattedDate}">`
+                                        : pickupDate.toLocaleString()}
+                                </td>
+                                <td>
+                                    <select class="status-select"
+                                        ${!isEditing ? `onchange="updateStatus('${booking.user_id}', this.value)"` : ''}
+                                        ${!isEditing ? 'disabled' : ''}>
+                                        <option value="0" ${booking.status === 0 ? 'selected' : ''}>Pending</option>
+                                        <option value="1" ${booking.status === 1 ? 'selected' : ''}>Confirmed</option>
+                                        <option value="2" ${booking.status === 2 ? 'selected' : ''}>In Progress</option>
+                                        <option value="3" ${booking.status === 3 ? 'selected' : ''}>Completed</option>
+                                        <option value="4" ${booking.status === 4 ? 'selected' : ''}>Cancelled</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    ${isEditing 
+                                        ? `
+                                            <button class="save-btn mr-2" onclick="saveBooking('${booking.user_id}')">Save</button>
+                                            <button class="cancel-btn" onclick="cancelEdit('${booking.user_id}')">Cancel</button>
+                                        `
+                                        : `<button class="edit-btn" onclick="editBooking('${booking.user_id}')">Edit</button>`
+                                    }
+                                </td>
+                            </tr>
+                        `}).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        // Function to edit a booking
+        function editBooking(id) {
+            const bookingsTable = document.getElementById('bookings-table');
+            try {
+                const bookings = JSON.parse(bookingsTable.dataset.bookings || '[]');
+                const updatedBookings = bookings.map(booking => ({
+                    ...booking,
+                    isEditing: booking.user_id === id
+                }));
+                bookingsTable.dataset.bookings = JSON.stringify(updatedBookings);
+                bookingsTable.innerHTML = formatBookingTable(updatedBookings);
+            } catch (error) {
+                console.error('Error editing booking:', error);
+                // If there's an error, just refresh the table
+                document.getElementById('bookings-table').dispatchEvent(new Event('htmx:trigger'));
+            }
+        }
+
+        // Function to save booking changes
+        function saveBooking(id) {
+            const row = document.getElementById(`booking-row-${id}`);
+            const inputs = row.getElementsByTagName('input');
+            const statusSelect = row.querySelector('select');
+            const dateInput = inputs[5].value;
+
+            const updatedBooking = {
+                user_id: id,
+                customer_name: inputs[0].value,
+                email: inputs[1].value,
+                phone: inputs[2].value,
+                pickup_address: inputs[3].value,
+                drop_address: inputs[4].value,
+                pickup_date: new Date(dateInput).toISOString(),
+                status: parseInt(statusSelect.value, 10)
+            };
+
+            fetch(`/api/booking?id=${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(updatedBooking)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                // Refresh the table
+                document.getElementById('bookings-table').dispatchEvent(new Event('htmx:trigger'));
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error updating booking');
+            });
+        }
+
+        // Function to cancel editing
+        function cancelEdit(id) {
+            document.getElementById('bookings-table').dispatchEvent(new Event('htmx:trigger'));
+        }
+
+        // Function to update status
+        function updateStatus(id, status) {
+            const row = document.getElementById(`booking-row-${id}`);
+            const cells = row.getElementsByTagName('td');
+            // Use the ISO date from the data attribute for reliability
+            const pickupDateIso = row.dataset.pickupDate;
+            const updatedBooking = {
+                user_id: id,
+                customer_name: cells[0].textContent,
+                email: cells[1].textContent,
+                phone: cells[2].textContent,
+                pickup_address: cells[3].textContent,
+                drop_address: cells[4].textContent,
+                pickup_date: pickupDateIso,
+                status: parseInt(status, 10)
+            };
+
+            fetch(`/api/booking?id=${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(updatedBooking)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                // Refresh the table
+                document.getElementById('bookings-table').dispatchEvent(new Event('htmx:trigger'));
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error updating status');
+            });
+        }
+
+        // Handle the bookings table response
+        document.body.addEventListener('htmx:afterRequest', function(evt) {
+            if (evt.detail.target.id === 'bookings-table' && evt.detail.successful) {
+                console.log('Bookings response:', evt.detail.xhr.response);
+                try {
+                    const bookings = JSON.parse(evt.detail.xhr.response);
+                    console.log('Parsed bookings:', bookings);
+                    
+                    // Show a message if no bookings are found
+                    if (!bookings || bookings.length === 0) {
+                        evt.detail.target.innerHTML = '<p class="text-gray-500 p-4">No bookings found in the database.</p>';
+                        return;
+                    }
+                    
+                    evt.detail.target.dataset.bookings = JSON.stringify(bookings);
+                    evt.detail.target.innerHTML = formatBookingTable(bookings);
+                } catch (error) {
+                    console.error('Error parsing booking data:', error);
+                    evt.detail.target.innerHTML = '<p class="text-red-500 p-4">Error loading bookings. Response was: ' + 
+                        evt.detail.xhr.response + '</p>';
+                }
+            }
+        });
+
+        // Add an error handler
+        document.body.addEventListener('htmx:responseError', function(evt) {
+            if (evt.detail.target.id === 'bookings-table') {
+                console.error('HTMX request error:', evt.detail);
+                evt.detail.target.innerHTML = '<p class="text-red-500 p-4">Error loading bookings: ' + 
+                    evt.detail.error + '</p>';
+            }
+        });
+
+        // Force trigger the load on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Triggering bookings load');
+            const bookingsTable = document.getElementById('bookings-table');
+            if (bookingsTable) {
+                bookingsTable.dispatchEvent(new Event('htmx:trigger'));
+            }
+        });
+    </script>
+</body>
+</html> 
