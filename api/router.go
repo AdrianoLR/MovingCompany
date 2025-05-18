@@ -37,7 +37,6 @@ func adminAuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 func SetupHTTPRoutes(repo repository.BookingRepository, tokenService *service.JWTTokenService) *http.ServeMux {
 	mux := http.NewServeMux()
 	bookingHandler := NewBookingHandler(repo, tokenService)
-	tokenHandler := NewTokenHandler(tokenService)
 
 	// Admin page route
 	mux.HandleFunc("/admin", func(w http.ResponseWriter, r *http.Request) {
@@ -47,7 +46,6 @@ func SetupHTTPRoutes(repo repository.BookingRepository, tokenService *service.JW
 	// Public routes
 	mux.HandleFunc("/api/submit-booking", bookingHandler.CreateBooking)
 	mux.HandleFunc("/submit-booking", bookingHandler.CreateBooking)
-	mux.HandleFunc("/s/", tokenHandler.RedirectShortLink)
 
 	// Booking routes with authentication
 	mux.HandleFunc("/api/bookings/", func(w http.ResponseWriter, r *http.Request) {
