@@ -115,7 +115,6 @@
     <script>
         // Function to generate a booking link
         function generateBookingLink() {
-            
             // Show loading state
             const generateBtn = document.querySelector('button[onclick="generateBookingLink()"]');
             const originalBtnText = generateBtn.textContent;
@@ -135,12 +134,7 @@
                 const resultDiv = document.getElementById('link-result');
                 const linkInput = document.getElementById('booking-link');
                 
-                // Use the full URL with host if available, otherwise construct it
-                const fullUrl = data.short_url_full 
-                    ? (window.location.protocol + '//' + data.short_url_full)
-                    : (window.location.origin + data.short_url);
-                    
-                linkInput.value = fullUrl;
+                linkInput.value = data.booking_url;
                 resultDiv.classList.remove('hidden');
                 
                 // Auto-select the link for easy copying
@@ -306,7 +300,7 @@
                 status: parseInt(statusSelect.value, 10)
             };
 
-            fetch(`/api/booking?id=${id}`, {
+            fetch(`/api/bookings/${id}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -317,8 +311,24 @@
                 if (!response.ok) {
                     throw new Error('Network response was not ok');
                 }
-                // Refresh the table
-                document.getElementById('bookings-table').dispatchEvent(new Event('htmx:trigger'));
+                
+                // Reset the editing state in the data
+                const bookingsTable = document.getElementById('bookings-table');
+                try {
+                    const bookings = JSON.parse(bookingsTable.dataset.bookings || '[]');
+                    const updatedBookings = bookings.map(booking => ({
+                        ...booking,
+                        isEditing: false
+                    }));
+                    bookingsTable.dataset.bookings = JSON.stringify(updatedBookings);
+                    
+                    // Update the UI to show the non-editing state
+                    bookingsTable.innerHTML = formatBookingTable(updatedBookings);
+                } catch (error) {
+                    console.error('Error resetting edit state:', error);
+                    // If there's an error, just refresh the table
+                    document.getElementById('bookings-table').dispatchEvent(new Event('htmx:trigger'));
+                }
             })
             .catch(error => {
                 console.error('Error:', error);
@@ -328,7 +338,23 @@
 
         // Function to cancel editing
         function cancelEdit(id) {
-            document.getElementById('bookings-table').dispatchEvent(new Event('htmx:trigger'));
+            // Reset the editing state in the data
+            const bookingsTable = document.getElementById('bookings-table');
+            try {
+                const bookings = JSON.parse(bookingsTable.dataset.bookings || '[]');
+                const updatedBookings = bookings.map(booking => ({
+                    ...booking,
+                    isEditing: false
+                }));
+                bookingsTable.dataset.bookings = JSON.stringify(updatedBookings);
+                
+                // Update the UI to show the non-editing state
+                bookingsTable.innerHTML = formatBookingTable(updatedBookings);
+            } catch (error) {
+                console.error('Error canceling edit:', error);
+                // If there's an error, just refresh the table
+                document.getElementById('bookings-table').dispatchEvent(new Event('htmx:trigger'));
+            }
         }
 
         // Function to update status
@@ -371,10 +397,8 @@
         // Handle the bookings table response
         document.body.addEventListener('htmx:afterRequest', function(evt) {
             if (evt.detail.target.id === 'bookings-table' && evt.detail.successful) {
-                console.log('Bookings response:', evt.detail.xhr.response);
                 try {
                     const bookings = JSON.parse(evt.detail.xhr.response);
-                    console.log('Parsed bookings:', bookings);
                     
                     // Show a message if no bookings are found
                     if (!bookings || bookings.length === 0) {
@@ -403,7 +427,6 @@
 
         // Force trigger the load on page load
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('Triggering bookings load');
             const bookingsTable = document.getElementById('bookings-table');
             if (bookingsTable) {
                 bookingsTable.dispatchEvent(new Event('htmx:trigger'));
@@ -411,4 +434,4 @@
         });
     </script>
 </body>
-</html> 
+</html>

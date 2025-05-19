@@ -2,11 +2,14 @@ package api
 
 import (
 	"MovingCompanyGo/config/service"
+	"bytes"
+	"compress/gzip"
+	"encoding/base64"
 	"encoding/json"
 	"html/template"
+	"io"
 	"log"
 	"net/http"
-	"net/url"
 	"time"
 )
 
@@ -38,12 +41,40 @@ func (h *TokenHandler) GenerateBookingLink(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// Create the secure link
+	// Create a compact token representation
+	tokenData := map[string]string{
+		"id":    tokenID,
+		"token": tokenString,
+	}
+
+	// Convert to JSON
+	jsonData, err := json.Marshal(tokenData)
+	if err != nil {
+		log.Printf("Error marshaling token data: %v", err)
+		http.Error(w, "Failed to generate booking link", http.StatusInternalServerError)
+		return
+	}
+
+	// Compress the data
+	var compressedData bytes.Buffer
+	gzipWriter := gzip.NewWriter(&compressedData)
+	if _, err := gzipWriter.Write(jsonData); err != nil {
+		log.Printf("Error compressing token data: %v", err)
+		http.Error(w, "Failed to generate booking link", http.StatusInternalServerError)
+		return
+	}
+	if err := gzipWriter.Close(); err != nil {
+		log.Printf("Error closing gzip writer: %v", err)
+		http.Error(w, "Failed to generate booking link", http.StatusInternalServerError)
+		return
+	}
+
+	// Encode to base64url
+	encodedToken := base64.RawURLEncoding.EncodeToString(compressedData.Bytes())
+
+	// Create the secure link with a single parameter
 	baseURL := "http://localhost:8080/booking-form"
-	params := url.Values{}
-	params.Add("id", tokenID)
-	params.Add("token", tokenString)
-	bookingURL := baseURL + "?" + params.Encode()
+	bookingURL := baseURL + "?t=" + encodedToken
 
 	w.Header().Set("Content-Type", "application/json")
 	encoder := json.NewEncoder(w)
@@ -63,8 +94,50 @@ func (h *TokenHandler) RenderBookingForm(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	tokenID := r.URL.Query().Get("id")
-	tokenString := r.URL.Query().Get("token")
+	encodedToken := r.URL.Query().Get("t")
+	if encodedToken == "" {
+		http.Error(w, "Invalid booking link", http.StatusBadRequest)
+		return
+	}
+
+	// Decode the token
+	compressedData, err := base64.RawURLEncoding.DecodeString(encodedToken)
+	if err != nil {
+		log.Printf("Error decoding token: %v", err)
+		http.Error(w, "Invalid booking link", http.StatusBadRequest)
+		return
+	}
+
+	// Decompress the data
+	gzipReader, err := gzip.NewReader(bytes.NewReader(compressedData))
+	if err != nil {
+		log.Printf("Error creating gzip reader: %v", err)
+		http.Error(w, "Invalid booking link", http.StatusBadRequest)
+		return
+	}
+
+	jsonData, err := io.ReadAll(gzipReader)
+	if err != nil {
+		log.Printf("Error decompressing token data: %v", err)
+		http.Error(w, "Invalid booking link", http.StatusBadRequest)
+		return
+	}
+	if err := gzipReader.Close(); err != nil {
+		log.Printf("Error closing gzip reader: %v", err)
+		http.Error(w, "Invalid booking link", http.StatusBadRequest)
+		return
+	}
+
+	// Parse the JSON
+	var tokenData map[string]string
+	if err := json.Unmarshal(jsonData, &tokenData); err != nil {
+		log.Printf("Error unmarshaling token data: %v", err)
+		http.Error(w, "Invalid booking link", http.StatusBadRequest)
+		return
+	}
+
+	tokenID := tokenData["id"]
+	tokenString := tokenData["token"]
 
 	if tokenID == "" || tokenString == "" {
 		http.Error(w, "Invalid booking link", http.StatusBadRequest)

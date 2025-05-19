@@ -39,25 +39,40 @@ func (b *Booking) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	// Parse the dates using a simpler format
+	// Parse the dates, trying RFC3339 format first, then falling back to simpler format
 	if aux.PickupDate != "" {
-		t, err := time.Parse("2006-01-02T15:04:05", aux.PickupDate)
+		// Try RFC3339 format first (handles .000Z)
+		t, err := time.Parse(time.RFC3339, aux.PickupDate)
 		if err != nil {
-			return err
+			// Fall back to the simpler format
+			t, err = time.Parse("2006-01-02T15:04:05", aux.PickupDate)
+			if err != nil {
+				return err
+			}
 		}
 		b.PickupDate = t
 	}
 	if aux.CreatedAt != "" {
-		t, err := time.Parse("2006-01-02T15:04:05", aux.CreatedAt)
+		// Try RFC3339 format first
+		t, err := time.Parse(time.RFC3339, aux.CreatedAt)
 		if err != nil {
-			return err
+			// Fall back to the simpler format
+			t, err = time.Parse("2006-01-02T15:04:05", aux.CreatedAt)
+			if err != nil {
+				return err
+			}
 		}
 		b.CreatedAt = t
 	}
 	if aux.UpdatedAt != "" {
-		t, err := time.Parse("2006-01-02T15:04:05", aux.UpdatedAt)
+		// Try RFC3339 format first
+		t, err := time.Parse(time.RFC3339, aux.UpdatedAt)
 		if err != nil {
-			return err
+			// Fall back to the simpler format
+			t, err = time.Parse("2006-01-02T15:04:05", aux.UpdatedAt)
+			if err != nil {
+				return err
+			}
 		}
 		b.UpdatedAt = t
 	}
