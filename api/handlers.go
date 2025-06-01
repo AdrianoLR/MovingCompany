@@ -17,7 +17,10 @@ type BookingHandler struct {
 }
 
 func NewBookingHandler(repository repository.BookingRepository, tokenService *service.JWTTokenService) *BookingHandler {
-	return &BookingHandler{repository: repository, tokenService: tokenService}
+	return &BookingHandler{
+		repository:   repository,
+		tokenService: tokenService,
+	}
 }
 
 func (h *BookingHandler) CreateBooking(w http.ResponseWriter, r *http.Request) {

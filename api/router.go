@@ -4,11 +4,11 @@ import (
 	"MovingCompanyGo/config/service"
 	"MovingCompanyGo/repository"
 	"net/http"
-	"net/url"
 	"strings"
 )
 
 // Simple authentication middleware to restrict access to API endpoints
+/*
 func adminAuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// Check if the request is coming from our admin page
@@ -31,17 +31,20 @@ func adminAuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 		// If not from admin and not a POST request, deny access
 		http.Error(w, "Unauthorized: Access denied", http.StatusUnauthorized)
 	}
-}
+}*/
 
 // SetupHTTPRoutes sets up the HTTP routes for the application
 func SetupHTTPRoutes(repo repository.BookingRepository, tokenService *service.JWTTokenService) *http.ServeMux {
 	mux := http.NewServeMux()
 	bookingHandler := NewBookingHandler(repo, tokenService)
+	authHandler := NewAuthHandler()
 
-	// Admin page route
-	mux.HandleFunc("/admin", func(w http.ResponseWriter, r *http.Request) {
-		http.ServeFile(w, r, "static/admin.html")
-	})
+	// Authentication routes
+	mux.HandleFunc("/login", authHandler.LoginPageHandler)
+	mux.HandleFunc("/api/auth/login", authHandler.AuthenticateHandler)
+
+	// Admin page route with authentication
+	mux.HandleFunc("/admin", RequireAuth(authHandler.AdminPageHandler))
 
 	// Public routes
 	mux.HandleFunc("/api/submit-booking", bookingHandler.CreateBooking)
@@ -53,7 +56,7 @@ func SetupHTTPRoutes(repo repository.BookingRepository, tokenService *service.JW
 		path := strings.TrimPrefix(r.URL.Path, "/api/bookings/")
 
 		// Apply admin authentication middleware
-		handler := adminAuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		handler := RequireAuth(func(w http.ResponseWriter, r *http.Request) {
 			if path == "" {
 				// Handle collection endpoints
 				switch r.Method {

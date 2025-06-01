@@ -18,10 +18,13 @@ func InitSupabase() error {
 	supabaseKey := os.Getenv("SUPABASE_KEY")
 
 	if supabaseUrl == "" || supabaseKey == "" {
-		panic("Missing Supabase credentials. Please set SUPABASE_URL and SUPABASE_KEY environment variables.")
+		panic("Missing Supabase credentials.")
 	}
 
-	client, err := supabase.NewClient(supabaseUrl, supabaseKey, nil)
+	client, err := supabase.NewClient(supabaseUrl, supabaseKey,
+		&supabase.ClientOptions{
+			Schema: "api",
+		})
 	if err != nil {
 		return err
 	}
