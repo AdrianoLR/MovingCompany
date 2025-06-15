@@ -55,8 +55,10 @@ func main() {
 	mux.HandleFunc("/booking-form", tokenHandler.RenderBookingForm)
 
 	// Serve static files
-	fileServer := http.FileServer(http.Dir("./static"))
-	mux.Handle("/", fileServer)
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("The Furniture Man Moving Houses"))
+	})
 
 	// Start server
 	port := os.Getenv("PORT")
