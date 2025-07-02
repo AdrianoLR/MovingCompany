@@ -27,6 +27,40 @@
         .admin-table tr:hover {
             background-color: #f1f5f9;
         }
+        /* Responsive Table Styles */
+        @media (max-width: 640px) {
+            .admin-table, .admin-table thead, .admin-table tbody, .admin-table th, .admin-table td, .admin-table tr {
+                display: block;
+            }
+            .admin-table thead {
+                display: none;
+            }
+            .admin-table tr {
+                margin-bottom: 1rem;
+                border-radius: 0.5rem;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+                background: #fff;
+                border: none;
+            }
+            .admin-table td {
+                border: none;
+                position: relative;
+                padding-left: 50%;
+                min-height: 2.5rem;
+                background: #f8fafc;
+                margin-bottom: 0.5rem;
+            }
+            .admin-table td:before {
+                position: absolute;
+                left: 1rem;
+                top: 0.75rem;
+                width: 45%;
+                white-space: nowrap;
+                font-weight: bold;
+                color: #64748b;
+                content: attr(data-label);
+            }
+        }
         .status-select {
             padding: 0.5rem;
             border: 1px solid #e2e8f0;
@@ -84,6 +118,14 @@
                     </button>
                 </div>
             </div>
+            <div class="mb-4">
+                <div class="flex">
+                    <button onclick="generateInvoice()" 
+                            class="bg-green-600 text-white px-4 py-2 rounded-r hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                        Generate Invoice
+                    </button>
+                </div>
+            </div>
             <div id="link-result" class="mt-4 p-4 bg-gray-50 rounded hidden">
                 <div class="flex items-center">
                     <label class="font-medium text-gray-700 mr-2">Booking Link:</label>
@@ -102,12 +144,21 @@
         <!-- Bookings Table -->
         <div class="bg-white rounded-lg shadow-lg p-6">
             <h2 class="text-2xl font-bold mb-4">Bookings Management</h2>
-            <div id="bookings-table" 
-                 hx-get="/api/bookings" 
-                 hx-trigger="load"
-                 hx-swap="innerHTML">
-                <p>Loading bookings...</p>
-                <!-- Bookings will be loaded here -->
+            <div class="mb-4 flex items-center">
+                <label for="sort-bookings" class="mr-2 font-medium">Sort by:</label>
+                <select id="sort-bookings" class="p-2 border rounded" onchange="handleSortChange()">
+                    <option value="name">Customer Name (A-Z)</option>
+                    <option value="status">Status</option>
+                </select>
+            </div>
+            <div class="overflow-x-auto">
+                <div id="bookings-table" 
+                     hx-get="/api/bookings" 
+                     hx-trigger="load"
+                     hx-swap="innerHTML">
+                    <p>Loading bookings...</p>
+                    <!-- Bookings will be loaded here -->
+                </div>
             </div>
         </div>
     </div>
@@ -153,6 +204,41 @@
                 generateBtn.textContent = originalBtnText;
             });
         }
+        function generateInvoice() {
+            const generateBtn = document.querySelector('button[onclick="generateInvoice()"]');
+            generateBtn.disabled = true;
+            const originalBtnText = generateBtn.textContent;
+            generateBtn.textContent = 'Generating...';
+
+            fetch('/admin/generate-invoice', {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/pdf',
+                },
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Failed to generate invoice');
+                return response.blob();
+            })
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'invoice.pdf';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+            })
+            .catch(error => {
+                alert('Failed to generate invoice. Please try again.');
+                console.error(error);
+            })
+            .finally(() => {
+                generateBtn.disabled = false;
+                generateBtn.textContent = originalBtnText;
+            });
+        }
         
         // Function to copy text to clipboard
         function copyToClipboard(elementId) {
@@ -169,8 +255,54 @@
             }, 2000);
         }
         
+        // Sort helper
+        function sortBookings(bookings, sortBy) {
+            const bookingsCopy = [...bookings];
+            if (sortBy === 'name') {
+                bookingsCopy.sort((a, b) => (a.customer_name || '').localeCompare(b.customer_name || ''));
+            } else if (sortBy === 'status') {
+                bookingsCopy.sort((a, b) => (a.status - b.status) || (a.customer_name || '').localeCompare(b.customer_name || ''));
+            }
+            return bookingsCopy;
+        }
+
+        // Global sort state
+        let currentSort = 'name';
+        function getSortSelect() {
+            return document.getElementById('sort-bookings');
+        }
+        function getBookingsTable() {
+            return document.getElementById('bookings-table');
+        }
+        function getCurrentBookings() {
+            const bookingsTable = getBookingsTable();
+            let bookings = [];
+            try {
+                bookings = JSON.parse(bookingsTable.dataset.bookings || '[]');
+            } catch {}
+            return bookings;
+        }
+        function setCurrentBookings(bookings) {
+            const bookingsTable = getBookingsTable();
+            bookingsTable.dataset.bookings = JSON.stringify(bookings);
+        }
+        function handleSortChange() {
+            const sortValue = getSortSelect().value;
+            currentSort = sortValue;
+            const bookings = getCurrentBookings();
+            getBookingsTable().innerHTML = formatBookingTable(bookings);
+        }
+        // Initialize sort on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const sortSelect = getSortSelect();
+            if (sortSelect) {
+                currentSort = sortSelect.value;
+            }
+        });
+
         // Function to format the booking table
         function formatBookingTable(bookings) {
+            bookings = sortBookings(bookings, currentSort);
             // Get status display name
             function getStatusText(status) {
                 switch (status) {
@@ -207,39 +339,39 @@
                             
                             return `
                             <tr id="booking-row-${booking.user_id}" data-booking-id="${booking.user_id}" data-pickup-date="${booking.pickup_date}">
-                                <td>
+                                <td data-label="Customer">
                                     ${isEditing 
                                         ? `<input type="text" class="w-full p-2 border rounded" value="${booking.customer_name}">`
                                         : booking.customer_name}
                                 </td>
-                                <td>
+                                <td data-label="Email">
                                     ${isEditing 
                                         ? `<input type="email" class="w-full p-2 border rounded" value="${booking.email}">`
                                         : booking.email}
                                 </td>
-                                <td>
+                                <td data-label="Phone">
                                     ${isEditing 
                                         ? `<input type="tel" class="w-full p-2 border rounded" value="${booking.phone}">`
                                         : booking.phone}
                                 </td>
-                                <td>
+                                <td data-label="Pickup Address">
                                     ${isEditing 
                                         ? `<input type="text" class="w-full p-2 border rounded" value="${booking.pickup_address}">`
                                         : booking.pickup_address}
                                 </td>
-                                <td>
+                                <td data-label="Drop Address">
                                     ${isEditing 
                                         ? `<input type="text" class="w-full p-2 border rounded" value="${booking.drop_address}">`
                                         : booking.drop_address}
                                 </td>
-                                <td>
+                                <td data-label="Pickup Date">
                                     ${isEditing 
                                         ? `<input type="datetime-local" class="w-full p-2 border rounded" value="${formattedDate}">`
                                         : pickupDate.toLocaleString()}
                                 </td>
-                                <td>
+                                <td data-label="Status">
                                     <select class="status-select"
-                                        ${!isEditing ? `onchange="updateStatus('${booking.user_id}', this.value)"` : ''}
+                                        ${!isEditing ? `onchange=\"updateStatus('${booking.user_id}', this.value)\"` : ''}
                                         ${!isEditing ? 'disabled' : ''}>
                                         <option value="0" ${booking.status === 0 ? 'selected' : ''}>Pending</option>
                                         <option value="1" ${booking.status === 1 ? 'selected' : ''}>Confirmed</option>
@@ -248,7 +380,7 @@
                                         <option value="4" ${booking.status === 4 ? 'selected' : ''}>Cancelled</option>
                                     </select>
                                 </td>
-                                <td>
+                                <td data-label="Actions">
                                     ${isEditing 
                                         ? `
                                             <button class="save-btn mr-2" onclick="saveBooking('${booking.user_id}')">Save</button>
@@ -311,30 +443,40 @@
                 if (!response.ok) {
                     throw new Error('Network response was not ok');
                 }
-                
-                // Reset the editing state in the data
-                const bookingsTable = document.getElementById('bookings-table');
-                try {
-                    const bookings = JSON.parse(bookingsTable.dataset.bookings || '[]');
-                    const updatedBookings = bookings.map(booking => ({
-                        ...booking,
-                        isEditing: false
-                    }));
-                    bookingsTable.dataset.bookings = JSON.stringify(updatedBookings);
-                    
-                    // Update the UI to show the non-editing state
-                    bookingsTable.innerHTML = formatBookingTable(updatedBookings);
-                } catch (error) {
-                    console.error('Error resetting edit state:', error);
-                    // If there's an error, just refresh the table
-                    document.getElementById('bookings-table').dispatchEvent(new Event('htmx:trigger'));
-                }
+                // Fetch the latest bookings and update the table
+                return fetch('/api/bookings');
+            })
+            .then(response => response.json())
+            .then(bookings => {
+                setCurrentBookings(bookings);
+                getBookingsTable().innerHTML = formatBookingTable(bookings);
             })
             .catch(error => {
                 console.error('Error:', error);
                 alert('Error updating booking');
             });
         }
+
+        // On initial load, sort table after bookings are loaded
+        document.body.addEventListener('htmx:afterRequest', function(evt) {
+            if (evt.detail.target.id === 'bookings-table' && evt.detail.successful) {
+                try {
+                    let bookings = [];
+                    // Try to parse JSON from XHR response
+                    try {
+                        bookings = JSON.parse(evt.detail.xhr.response);
+                    } catch {}
+                    if (!bookings || bookings.length === 0) {
+                        evt.detail.target.innerHTML = '<p class="text-gray-500 p-4">No bookings found in the database.</p>';
+                        return;
+                    }
+                    evt.detail.target.dataset.bookings = JSON.stringify(bookings);
+                    evt.detail.target.innerHTML = formatBookingTable(bookings);
+                } catch (error) {
+                    evt.detail.target.innerHTML = '<p class="text-red-500 p-4">Error loading bookings.</p>';
+                }
+            }
+        });
 
         // Function to cancel editing
         function cancelEdit(id) {

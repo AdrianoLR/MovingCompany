@@ -35,6 +35,20 @@ func adminAuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 
 // SetupHTTPRoutes sets up the HTTP routes for the application
 func SetupHTTPRoutes(repo repository.BookingRepository, tokenService *service.JWTTokenService) *http.ServeMux {
+
+	// Handler for generating invoice
+	generateInvoiceHandler := RequireAuth(func(w http.ResponseWriter, r *http.Request) {
+		pdfBytes, err := service.GenerateSampleInvoice()
+		if err != nil {
+			http.Error(w, "Failed to generate invoice: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/pdf")
+		w.Header().Set("Content-Disposition", "attachment; filename=invoice.pdf")
+		w.WriteHeader(http.StatusOK)
+		w.Write(pdfBytes)
+	})
+
 	mux := http.NewServeMux()
 	bookingHandler := NewBookingHandler(repo, tokenService)
 	authHandler := NewAuthHandler()
@@ -45,6 +59,7 @@ func SetupHTTPRoutes(repo repository.BookingRepository, tokenService *service.JW
 
 	// Admin page route with authentication
 	mux.HandleFunc("/admin", RequireAuth(authHandler.AdminPageHandler))
+	mux.HandleFunc("/admin/generate-invoice", generateInvoiceHandler)
 
 	// Public routes
 	mux.HandleFunc("/api/submit-booking", bookingHandler.CreateBooking)

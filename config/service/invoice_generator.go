@@ -1,14 +1,15 @@
 package service
 
 import (
+	"bytes"
 	"log"
 	"os"
-	"testing"
 
 	generator "github.com/angelodlfrtr/go-invoice-generator"
 )
 
-func TestNew(t *testing.T) {
+// GenerateSampleInvoice generates a sample invoice PDF and returns its bytes.
+func GenerateSampleInvoice() ([]byte, error) {
 	doc, _ := generator.New(generator.Invoice, &generator.Options{
 		TextTypeInvoice: "FACTURE",
 		AutoPrint:       true,
@@ -33,7 +34,7 @@ func TestNew(t *testing.T) {
 	doc.SetDate("02/03/2021")
 	doc.SetPaymentTerm("02/04/2021")
 
-	logoBytes, err := os.ReadFile("./example_logo.png")
+	logoBytes, err := os.ReadFile("./config/service/logo.png")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -115,12 +116,13 @@ func TestNew(t *testing.T) {
 
 	pdf, err := doc.Build()
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
-	err = pdf.OutputFileAndClose("out.pdf")
-
+	var buf bytes.Buffer
+	err = pdf.Output(&buf)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
+	return buf.Bytes(), nil
 }
