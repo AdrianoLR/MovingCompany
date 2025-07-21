@@ -1,6 +1,7 @@
 package service
 
 import (
+	"MovingCompanyGo/models"
 	"bytes"
 	"log"
 	"os"
@@ -9,110 +10,80 @@ import (
 )
 
 // GenerateSampleInvoice generates a sample invoice PDF and returns its bytes.
-func GenerateSampleInvoice() ([]byte, error) {
+func GenerateSampleInvoice(userData *models.Booking) ([]byte, error) {
 	doc, _ := generator.New(generator.Invoice, &generator.Options{
-		TextTypeInvoice: "FACTURE",
+		TextTypeInvoice: "INVOICE",
 		AutoPrint:       true,
 	})
+	//Header
+	doc.SetRef("Bruno Nascimento")
+	doc.SetVersion("1.0")
+	doc.SetDate("Dado Dinamico")
+	doc.SetPaymentTerm("Dado Dinamico")
 
-	doc.SetHeader(&generator.HeaderFooter{
-		Text:       "<center>Cupcake ipsum dolor sit amet bonbon. I love croissant cotton candy. Carrot cake sweet I love sweet roll cake powder.</center>",
-		Pagination: true,
-	})
-
-	doc.SetFooter(&generator.HeaderFooter{
-		Text:       "<center>Cupcake ipsum dolor sit amet bonbon. I love croissant cotton candy. Carrot cake sweet I love sweet roll cake powder.</center>",
-		Pagination: true,
-	})
-
-	doc.SetRef("testref")
-	doc.SetVersion("someversion")
-
-	doc.SetDescription("A description")
-	doc.SetNotes("I love croissant cotton candy. Carrot cake sweet I love sweet roll cake powder! I love croissant cotton candy. Carrot cake sweet I love sweet roll cake powder! I love croissant cotton candy. Carrot cake sweet I love sweet roll cake powder! I love croissant cotton candy. Carrot cake sweet I love sweet roll cake powder! ")
-
-	doc.SetDate("02/03/2021")
-	doc.SetPaymentTerm("02/04/2021")
+	//Table
+	doc.SetDescription("Description")
 
 	logoBytes, err := os.ReadFile("./config/service/logo.png")
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	doc.SetCustomer(&generator.Contact{
+		Name: "The Furniture Man Removals",
+		Address: &generator.Address{
+			Address:    "26 Hastings St",
+			PostalCode: "Scarborough WA 6019",
+			City:       "Australia",
+			Country:    "ABN: 420748904",
+		},
+	})
+
 	doc.SetCompany(&generator.Contact{
-		Name: "Test Company",
+		Name: "userData.CustomerName",
 		Logo: logoBytes,
 		Address: &generator.Address{
-			Address:    "89 Rue de Brest",
-			Address2:   "Appartement 2",
-			PostalCode: "75000",
-			City:       "Paris",
-			Country:    "France",
+			Address:    "Dado dinamico",
+			Address2:   "Dado dinamico 2",
+			PostalCode: "Dado dinamico",
+			City:       "Australia",
+			// Country:    "",
 		},
 	})
 
-	doc.SetCustomer(&generator.Contact{
-		Name: "Test Customer",
-		Address: &generator.Address{
-			Address:    "89 Rue de Paris",
-			PostalCode: "29200",
-			City:       "Brest",
-			Country:    "France",
-		},
-	})
-
-	for i := 0; i < 3; i++ {
-		doc.AppendItem(&generator.Item{
-			Name:        "Cupcake ipsum dolor sit amet bonbon, coucou bonbon lala jojo, mama titi toto",
-			Description: "Cupcake ipsum dolor sit amet bonbon, Cupcake ipsum dolor sit amet bonbon, Cupcake ipsum dolor sit amet bonbon",
-			UnitCost:    "99876.89",
-			Quantity:    "2",
-			Tax: &generator.Tax{
-				Percent: "20",
-			},
-		})
-	}
-
+	// for i := 0; i < 3; i++ {
 	doc.AppendItem(&generator.Item{
-		Name:     "Test",
-		UnitCost: "99876.89",
-		Quantity: "2",
-		Tax: &generator.Tax{
-			Amount: "89",
-		},
-		Discount: &generator.Discount{
-			Percent: "30",
-		},
+		Name:        "Removals CB to Duncraig",
+		Description: " Job done 31/03 - 9:00 to 11:00, 2 Hours job Flat pack delivery no required assembl",
+		UnitCost:    "340",
+		Quantity:    "1",
+		// Tax: &generator.Tax{
+		// 	Percent: "20",
+		// },
 	})
+	// }
 
-	doc.AppendItem(&generator.Item{
-		Name:     "Test",
-		UnitCost: "3576.89",
-		Quantity: "2",
-		Discount: &generator.Discount{
-			Percent: "50",
-		},
-	})
-
-	doc.AppendItem(&generator.Item{
-		Name:     "Test",
-		UnitCost: "889.89",
-		Quantity: "2",
-		Discount: &generator.Discount{
-			Amount: "234.67",
-		},
-	})
+	// doc.AppendItem(&generator.Item{
+	// 	Name:     "Test",
+	// 	UnitCost: "3576.89",
+	// 	Quantity: "2",
+	// 	Discount: &generator.Discount{
+	// 		Percent: "50",
+	// 	},
+	// })
 
 	doc.SetDefaultTax(&generator.Tax{
 		Percent: "10",
 	})
+	//Footer
+	doc.SetNotes("Thanks for supporting your local business area")
 
 	// doc.SetDiscount(&generator.Discount{
 	// Percent: "90",
 	// })
-	doc.SetDiscount(&generator.Discount{
-		Amount: "1340",
-	})
+	// doc.SetDiscount(&generator.Discount{
+	// 	Amount: "1340",
+	// })
 
 	pdf, err := doc.Build()
 	if err != nil {
