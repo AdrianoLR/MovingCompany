@@ -1,6 +1,7 @@
 package config
 
 import (
+	"log"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -19,6 +20,11 @@ func InitSupabase() error {
 
 	if supabaseUrl == "" || supabaseKey == "" {
 		panic("Missing Supabase credentials.")
+	}
+
+	// Log the key type for debugging (first 20 chars only for security)
+	if len(supabaseKey) > 20 {
+		log.Printf("Using Supabase key starting with: %s...", supabaseKey[:20])
 	}
 
 	client, err := supabase.NewClient(supabaseUrl, supabaseKey,

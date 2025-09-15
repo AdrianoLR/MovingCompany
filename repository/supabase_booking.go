@@ -13,6 +13,7 @@ import (
 type BookingRepository interface {
 	Create(ctx context.Context, booking *models.Booking, furnitureItems *models.FurnitureItem) error
 	GetByID(ctx context.Context, bookingID string) (*models.Booking, error)
+	GetFurnitureItemsByBookingID(ctx context.Context, bookingID string) (*models.FurnitureItem, error)
 	Update(ctx context.Context, booking *models.Booking) error
 	Delete(ctx context.Context, bookingID string) error
 	List(ctx context.Context) ([]*models.Booking, error)
@@ -62,6 +63,20 @@ func (r *SupabaseBookingRepository) GetByID(ctx context.Context, id string) (*mo
 	}
 
 	return &booking, nil
+}
+
+func (r *SupabaseBookingRepository) GetFurnitureItemsByBookingID(ctx context.Context, bookingID string) (*models.FurnitureItem, error) {
+	var furnitureItem models.FurnitureItem
+	result, _, err := r.client.From("booking_furniture_items").Select("*", "", false).Eq("furniture_id", bookingID).Single().Execute()
+	if err != nil {
+		return nil, err
+	}
+
+	if err := json.Unmarshal(result, &furnitureItem); err != nil {
+		return nil, err
+	}
+
+	return &furnitureItem, nil
 }
 
 func (r *SupabaseBookingRepository) Update(ctx context.Context, booking *models.Booking) error {

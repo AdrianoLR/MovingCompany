@@ -4,6 +4,7 @@ import (
 	"MovingCompanyGo/config/service"
 	"MovingCompanyGo/repository"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -38,7 +39,49 @@ func SetupHTTPRoutes(repo repository.BookingRepository, tokenService *service.JW
 
 	// Handler for generating invoice
 	generateInvoiceHandler := RequireAuth(func(w http.ResponseWriter, r *http.Request) {
-		pdfBytes, err := service.GenerateSampleInvoice()
+		// Get booking ID from query parameter
+		bookingID := r.URL.Query().Get("booking_id")
+		if bookingID == "" {
+			http.Error(w, "booking_id parameter is required", http.StatusBadRequest)
+			return
+		}
+
+		// Get manual pricing parameters
+		totalAmountStr := r.URL.Query().Get("total_amount")
+		hoursUsedStr := r.URL.Query().Get("hours_used")
+		jobDescription := r.URL.Query().Get("job_description")
+
+		// Parse total amount
+		var totalAmount float64 = 340.00 // default
+		if totalAmountStr != "" {
+			if parsed, err := strconv.ParseFloat(totalAmountStr, 64); err == nil {
+				totalAmount = parsed
+			}
+		}
+
+		// Parse hours used
+		var hoursUsed float64 = 2.0 // default
+		if hoursUsedStr != "" {
+			if parsed, err := strconv.ParseFloat(hoursUsedStr, 64); err == nil {
+				hoursUsed = parsed
+			}
+		}
+
+		// Fetch the booking data
+		booking, err := repo.GetByID(r.Context(), bookingID)
+		if err != nil {
+			http.Error(w, "Failed to fetch booking: "+err.Error(), http.StatusNotFound)
+			return
+		}
+
+		// Fetch the furniture items data
+		furnitureItems, err := repo.GetFurnitureItemsByBookingID(r.Context(), bookingID)
+		if err != nil {
+			http.Error(w, "Failed to fetch furniture items: "+err.Error(), http.StatusNotFound)
+			return
+		}
+
+		pdfBytes, err := service.GenerateSampleInvoice(booking, furnitureItems, totalAmount, hoursUsed, jobDescription)
 		if err != nil {
 			http.Error(w, "Failed to generate invoice: "+err.Error(), http.StatusInternalServerError)
 			return
