@@ -4,6 +4,8 @@ import (
 	"MovingCompanyGo/config"
 	"encoding/json"
 	"net/http"
+	"strings"
+	"time"
 )
 
 // AuthHandler handles authentication related requests
@@ -52,6 +54,17 @@ func (h *AuthHandler) AuthenticateHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	// Set secure cookie with the access token
+	http.SetCookie(w, &http.Cookie{
+		Name:     "sb-auth-token",
+		Value:    resp.AccessToken,
+		HttpOnly: true,
+		Secure:   false, // set to true in production with HTTPS
+		SameSite: http.SameSiteLaxMode,
+		Path:     "/",
+		Expires:  time.Now().Add(24 * time.Hour),
+	})
+
 	// Return success response with token
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -78,9 +91,12 @@ func RequireAuth(next http.HandlerFunc) http.HandlerFunc {
 			token = cookie.Value
 		}
 
-		// Validate the token with Supabase
-		// This is a simplified check - in a real app, you would verify the token
-		if token == "" {
+		// Strip "Bearer " prefix if present
+		token = strings.TrimPrefix(token, "Bearer ")
+
+		// Actually validate with Supabase
+		_, err := config.SupabaseClient.Auth.WithToken(token).GetUser()
+		if err != nil {
 			http.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}

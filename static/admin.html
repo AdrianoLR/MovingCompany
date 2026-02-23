@@ -394,6 +394,24 @@
             return bookingsCopy;
         }
 
+        // Helper function to format date in UTC+8 (Perth time)
+        function formatDateUTC8(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return '';
+            
+            // Format in Perth timezone (UTC+8)
+            return date.toLocaleString('en-AU', {
+                timeZone: 'Australia/Perth',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            });
+        }
+
         // Global sort state
         let currentSort = 'name';
         function getSortSelect() {
@@ -464,7 +482,7 @@
                             const isEditing = booking.isEditing || false;
                             const pickupDate = new Date(booking.pickup_date);
                             const formattedDate = !isNaN(pickupDate.getTime()) 
-                                ? pickupDate.toISOString().slice(0, 16)
+                                ? booking.pickup_date.slice(0, 16)
                                 : new Date().toISOString().slice(0, 16);
                             
                             return `
@@ -497,7 +515,7 @@
                                 <td data-label="Pickup Date">
                                     ${isEditing 
                                         ? `<input type="datetime-local" class="w-full p-2 border rounded" value="${formattedDate}">`
-                                        : pickupDate.toLocaleString()}
+                                        : formatDateUTC8(booking.pickup_date)}
                                 </td>
                                 <td data-label="Status">
                                     <select class="status-select"
@@ -547,6 +565,8 @@
             }
         }
 
+
+
         // Function to save booking changes
         function saveBooking(id) {
             const row = document.getElementById(`booking-row-${id}`);
@@ -561,7 +581,7 @@
                 phone: inputs[2].value,
                 pickup_address: inputs[3].value,
                 drop_address: inputs[4].value,
-                pickup_date: new Date(dateInput).toISOString(),
+                pickup_date: dateInput,
                 status: parseInt(statusSelect.value, 10)
             };
 

@@ -30,7 +30,11 @@ func InitSupabase() error {
 	client, err := supabase.NewClient(supabaseUrl, supabaseKey,
 		&supabase.ClientOptions{
 			Schema: "api",
-		})
+        	Headers: map[string]string{
+            "Content-Profile": "api",
+            "Accept-Profile":  "api",
+        },
+	})
 	if err != nil {
 		return err
 	}
