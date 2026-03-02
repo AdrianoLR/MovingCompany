@@ -35,8 +35,8 @@ func main() {
 		})
 	}
 
-	// Initialize token repository
-	tokenRepo := repository.NewSupabaseTokenRepository(config.SupabaseClient, "booking_tokens") // "tokens" is the table name in Supabase
+	// Initialize token repository with admin client (bypasses RLS)
+	tokenRepo := repository.NewSupabaseTokenRepository(config.SupabaseAdminClient, "booking_tokens")
 
 	// Initialize token service
 	tokenService := service.NewJWTTokenService(os.Getenv("JWT_SECRET_KEY"), tokenRepo)
