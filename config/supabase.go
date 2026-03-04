@@ -18,16 +18,6 @@ func InitSupabase() error {
 
 	supabaseUrl := os.Getenv("SUPABASE_URL")
 	supabaseKey := os.Getenv("SUPABASE_KEY")
-	supabaseServiceKey := os.Getenv("SUPABASE_SERVICE_ROLE_KEY")
-
-	if supabaseUrl == "" || supabaseKey == "" {
-		panic("Missing Supabase credentials.")
-	}
-
-	// Log the key type for debugging (first 20 chars only for security)
-	if len(supabaseKey) > 20 {
-		log.Printf("Using Supabase key starting with: %s...", supabaseKey[:20])
-	}
 
 	// Regular client for user operations (subject to RLS)
 	client, err := supabase.NewClient(supabaseUrl, supabaseKey,
@@ -45,8 +35,8 @@ func InitSupabase() error {
 	SupabaseClient = client
 
 	// Admin client with service role key (bypasses RLS)
-	if supabaseServiceKey != "" {
-		adminClient, err := supabase.NewClient(supabaseUrl, supabaseServiceKey,
+	if supabaseKey != "" {
+		adminClient, err := supabase.NewClient(supabaseUrl, supabaseKey,
 			&supabase.ClientOptions{
 				Schema: "api",
 				Headers: map[string]string{

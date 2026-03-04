@@ -59,7 +59,7 @@ func (h *AuthHandler) AuthenticateHandler(w http.ResponseWriter, r *http.Request
 		Name:     "sb-auth-token",
 		Value:    resp.AccessToken,
 		HttpOnly: true,
-		Secure:   false, // set to true in production with HTTPS
+		Secure:   true, // set to true in production with HTTPS
 		SameSite: http.SameSiteLaxMode,
 		Path:     "/",
 		Expires:  time.Now().Add(24 * time.Hour),

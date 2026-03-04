@@ -15,17 +15,18 @@ import (
 )
 
 func main() {
-	// Load environment variables
+	// Load environment variables from .env — must happen before any os.Getenv calls
 	if err := godotenv.Load(); err != nil {
-		log.Printf("Warning: .env file not found")
+		log.Printf("Warning: .env file not found, relying on system environment variables")
 	}
 
-	// Initialize Supabase
+	// R8: InitSupabase no longer calls godotenv.Load itself, so there is no double-load.
+	// It now returns an error for missing credentials instead of panicking (S2).
 	if err := config.InitSupabase(); err != nil {
-		log.Fatalf("Failed to initialize Supabase client: %v", err)
+		log.Fatalf("Failed to initialise Supabase client: %v", err)
 	}
 
-	// Create HTTP server with logging middleware
+	// Logging middleware logs the method, path, and elapsed time for every request
 	loggingMiddleware := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
@@ -35,39 +36,32 @@ func main() {
 		})
 	}
 
-	// Initialize token repository with admin client (bypasses RLS)
+	// Token repository uses the admin client so it can bypass RLS for token lookups
 	tokenRepo := repository.NewSupabaseTokenRepository(config.SupabaseAdminClient, "booking_tokens")
 
-	// Initialize token service
+	// Token service wraps JWT creation/validation with DB-backed one-time-use enforcement
 	tokenService := service.NewJWTTokenService(os.Getenv("JWT_SECRET_KEY"), tokenRepo)
 
-	// Initialize repository
+	// Booking repository uses the regular (RLS-enforced) client
 	repo := repository.NewSupabaseBookingRepository()
 
-	// Setup API routes
+	// R1: SetupHTTPRoutes now registers ALL routes including token routes internally.
+	// The TokenHandler is created inside SetupHTTPRoutes, so main.go no longer needs
+	// to create it or call mux.HandleFunc for /api/generate-link and /booking-form.
 	mux := api.SetupHTTPRoutes(repo, tokenService)
 
-	// Create token handler
-	tokenHandler := api.NewTokenHandler(tokenService)
-
-	// Add token routes
-	mux.HandleFunc("/api/generate-link", tokenHandler.GenerateBookingLink)
-	mux.HandleFunc("/booking-form", tokenHandler.RenderBookingForm)
-
-	// Serve static files
+	// Root catch-all — returns a simple health-check string for any unmatched path
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("The Furniture Man Moving Houses"))
 	})
 
-	// Start server
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8080"
+		port = "8080" // default port for local development
 	}
 
-	// Apply logging middleware
-	handler := loggingMiddleware(mux)
+	handler := loggingMiddleware(mux) // wrap the mux with request logging
 
 	log.Printf("Starting server on :%s", port)
 	if err := http.ListenAndServe(":"+port, handler); err != nil {

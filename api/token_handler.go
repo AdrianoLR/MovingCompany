@@ -10,86 +10,90 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"   // S7: used to read BASE_URL from environment instead of hardcoding localhost
 	"time"
 )
 
+// TokenHandler manages one-time booking link generation and form rendering.
 type TokenHandler struct {
-	tokenService *service.JWTTokenService
+	tokenService service.TokenService // R3: depend on the interface, not the concrete *JWTTokenService
 }
 
-func NewTokenHandler(tokenService *service.JWTTokenService) *TokenHandler {
+// NewTokenHandler constructs a TokenHandler.
+// R3: tokenService is the TokenService interface for decoupling and testability.
+func NewTokenHandler(tokenService service.TokenService) *TokenHandler {
 	return &TokenHandler{
 		tokenService: tokenService,
 	}
 }
 
-// GenerateBookingLink creates a new booking form link
+// GenerateBookingLink creates a new one-time booking link and returns it as JSON.
 func (h *TokenHandler) GenerateBookingLink(w http.ResponseWriter, r *http.Request) {
-
-	// Only allow GET method
 	if r.Method != http.MethodGet {
-		log.Printf("Error occurred: %v", r.Method)
+		log.Printf("GenerateBookingLink: unexpected method %s", r.Method)
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	// Generate a token with 24 hour expiry
-	tokenID, tokenString, err := h.tokenService.GenerateToken(24 * time.Hour)
+	// R4: pass the request context so the DB insert can respect the request deadline
+	tokenID, tokenString, err := h.tokenService.GenerateToken(r.Context(), 24*time.Hour)
 	if err != nil {
-		log.Printf("Error occurred: %v", err)
+		log.Printf("GenerateBookingLink: token generation failed: %v", err) // S8: full error to logs
 		http.Error(w, "Failed to generate booking link", http.StatusInternalServerError)
 		return
 	}
 
-	// Create a compact token representation
+	// Pack both the token ID and the signed JWT into a compact, URL-safe payload
 	tokenData := map[string]string{
-		"id":    tokenID,
-		"token": tokenString,
+		"id":    tokenID,    // used to look up the DB record on validation
+		"token": tokenString, // the signed JWT that the booking form will submit
 	}
 
-	// Convert to JSON
 	jsonData, err := json.Marshal(tokenData)
 	if err != nil {
-		log.Printf("Error marshaling token data: %v", err)
+		log.Printf("GenerateBookingLink: JSON marshal failed: %v", err)
 		http.Error(w, "Failed to generate booking link", http.StatusInternalServerError)
 		return
 	}
 
-	// Compress the data
+	// Gzip the JSON to reduce URL length before base64 encoding
 	var compressedData bytes.Buffer
 	gzipWriter := gzip.NewWriter(&compressedData)
 	if _, err := gzipWriter.Write(jsonData); err != nil {
-		log.Printf("Error compressing token data: %v", err)
+		log.Printf("GenerateBookingLink: gzip write failed: %v", err)
 		http.Error(w, "Failed to generate booking link", http.StatusInternalServerError)
 		return
 	}
-	if err := gzipWriter.Close(); err != nil {
-		log.Printf("Error closing gzip writer: %v", err)
+	if err := gzipWriter.Close(); err != nil { // Close must be called to flush the gzip trailer
+		log.Printf("GenerateBookingLink: gzip close failed: %v", err)
 		http.Error(w, "Failed to generate booking link", http.StatusInternalServerError)
 		return
 	}
 
-	// Encode to base64url
+	// Base64url-encode the compressed bytes so they are safe to embed in a URL query parameter
 	encodedToken := base64.RawURLEncoding.EncodeToString(compressedData.Bytes())
 
-	// Create the secure link with a single parameter
-	baseURL := "http://localhost:8080/booking-form"
-	bookingURL := baseURL + "?t=" + encodedToken
+	// S7: Read BASE_URL from env so the link works in any environment.
+	// Previously this was hardcoded to "http://localhost:8080" which produced broken links in production.
+	baseURL := os.Getenv("BASE_URL")
+	if baseURL == "" {
+		baseURL = "http://localhost:8080" // safe fallback for local development only
+	}
+	bookingURL := baseURL + "/booking-form?t=" + encodedToken
 
 	w.Header().Set("Content-Type", "application/json")
 	encoder := json.NewEncoder(w)
-	encoder.SetEscapeHTML(false)
+	encoder.SetEscapeHTML(false) // prevent the URL's & from being escaped to \u0026 in the JSON output
 	encoder.Encode(map[string]interface{}{
 		"booking_url": bookingURL,
 		"expires_at":  time.Now().Add(24 * time.Hour),
 	})
 }
 
-// RenderBookingForm validates the token and renders the form
+// RenderBookingForm validates the one-time token embedded in the URL and renders the booking form.
 func (h *TokenHandler) RenderBookingForm(w http.ResponseWriter, r *http.Request) {
-	// Only allow GET method
 	if r.Method != http.MethodGet {
-		log.Printf("Error occurred: %v", r.Method)
+		log.Printf("RenderBookingForm: unexpected method %s", r.Method)
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
@@ -100,38 +104,36 @@ func (h *TokenHandler) RenderBookingForm(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// Decode the token
+	// Reverse the encoding: base64url → gzip-compressed bytes → JSON
 	compressedData, err := base64.RawURLEncoding.DecodeString(encodedToken)
 	if err != nil {
-		log.Printf("Error decoding token: %v", err)
+		log.Printf("RenderBookingForm: base64 decode failed: %v", err) // S8: full error to logs
 		http.Error(w, "Invalid booking link", http.StatusBadRequest)
 		return
 	}
 
-	// Decompress the data
 	gzipReader, err := gzip.NewReader(bytes.NewReader(compressedData))
 	if err != nil {
-		log.Printf("Error creating gzip reader: %v", err)
+		log.Printf("RenderBookingForm: gzip reader failed: %v", err)
 		http.Error(w, "Invalid booking link", http.StatusBadRequest)
 		return
 	}
 
 	jsonData, err := io.ReadAll(gzipReader)
 	if err != nil {
-		log.Printf("Error decompressing token data: %v", err)
+		log.Printf("RenderBookingForm: gzip read failed: %v", err)
 		http.Error(w, "Invalid booking link", http.StatusBadRequest)
 		return
 	}
-	if err := gzipReader.Close(); err != nil {
-		log.Printf("Error closing gzip reader: %v", err)
+	if err := gzipReader.Close(); err != nil { // Close flushes and checks the gzip checksum
+		log.Printf("RenderBookingForm: gzip close failed: %v", err)
 		http.Error(w, "Invalid booking link", http.StatusBadRequest)
 		return
 	}
 
-	// Parse the JSON
 	var tokenData map[string]string
 	if err := json.Unmarshal(jsonData, &tokenData); err != nil {
-		log.Printf("Error unmarshaling token data: %v", err)
+		log.Printf("RenderBookingForm: JSON unmarshal failed: %v", err)
 		http.Error(w, "Invalid booking link", http.StatusBadRequest)
 		return
 	}
@@ -140,25 +142,25 @@ func (h *TokenHandler) RenderBookingForm(w http.ResponseWriter, r *http.Request)
 	tokenString := tokenData["token"]
 
 	if tokenID == "" || tokenString == "" {
-		http.Error(w, "Invalid booking link", http.StatusBadRequest)
+		http.Error(w, "Invalid booking link", http.StatusBadRequest) // payload is missing required fields
 		return
 	}
 
-	// Validate the token
-	validatedTokenID, valid, err := h.tokenService.ValidateToken(tokenString)
+	// R4: pass the request context so the DB lookup can respect the request deadline
+	validatedTokenID, valid, err := h.tokenService.ValidateToken(r.Context(), tokenString)
 	if err != nil || !valid {
 		http.Error(w, "This booking link is invalid or has already been used", http.StatusUnauthorized)
 		return
 	}
 
-	// Parse the index page instead of booking form
 	tmpl, err := template.ParseFiles("static/index.html")
 	if err != nil {
-		http.Error(w, "Error loading index page: "+err.Error(), http.StatusInternalServerError)
+		log.Printf("RenderBookingForm: template parse failed: %v", err) // S8: full error to logs
+		http.Error(w, "Error loading booking form", http.StatusInternalServerError) // S8: generic to client
 		return
 	}
 
-	// Pass the token data to the booking form
+	// Inject the token data so the form can include it in the booking submission
 	data := struct {
 		TokenID     string
 		TokenString string
@@ -167,41 +169,13 @@ func (h *TokenHandler) RenderBookingForm(w http.ResponseWriter, r *http.Request)
 		TokenString: tokenString,
 	}
 
-	// Render the booking form with the token data
 	if err := tmpl.Execute(w, data); err != nil {
-		http.Error(w, "Error rendering booking form: "+err.Error(), http.StatusInternalServerError)
+		log.Printf("RenderBookingForm: template execute failed: %v", err) // S8: full error to logs
+		http.Error(w, "Error rendering booking form", http.StatusInternalServerError) // S8: generic to client
 		return
 	}
 }
 
-// SubmitBookingForm processes the form and consumes the token
-func (h *TokenHandler) SubmitBookingForm(w http.ResponseWriter, r *http.Request) {
-	// Only allow POST method
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	if err := r.ParseForm(); err != nil {
-		http.Error(w, "Error parsing form data", http.StatusBadRequest)
-		return
-	}
-
-	tokenString := r.FormValue("token")
-
-	// Consume the token
-	valid, err := h.tokenService.ConsumeToken(tokenString)
-	if err != nil || !valid {
-		http.Error(w, "Invalid booking link or this form has already been submitted", http.StatusUnauthorized)
-		return
-	}
-
-	// Process the booking form data
-	// ...
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"success": true,
-		"message": "Your booking has been successfully submitted",
-	})
-}
+// R6: SubmitBookingForm removed — it was never registered in the router and contained only
+// a placeholder comment ("// ...") with no real implementation. Token consumption is already
+// handled inside BookingHandler.CreateBooking via the Token field in the request body.
