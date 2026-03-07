@@ -1,0 +1,89 @@
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+.admin-table th, .admin-table td {
+    padding: 0.75rem;
+    border: 1px solid #e2e8f0;
+    text-align: left;
+}
+.admin-table th {
+    background-color: #f8fafc;
+    font-weight: bold;
+}
+.admin-table tr:nth-child(even) { background-color: #f8fafc; }
+.admin-table tr:hover { background-color: #f1f5f9; }
+
+/* Mobile: stack cells vertically, using data-label as column header */
+@media (max-width: 640px) {
+    .admin-table, .admin-table thead, .admin-table tbody,
+    .admin-table th, .admin-table td, .admin-table tr { display: block; }
+
+    .admin-table thead { display: none; }
+
+    .admin-table tr {
+        margin-bottom: 1rem;
+        border-radius: 0.5rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        background: #fff;
+        border: none;
+    }
+    .admin-table td {
+        border: none;
+        position: relative;
+        padding-left: 50%;
+        min-height: 2.5rem;
+        background: #f8fafc;
+        margin-bottom: 0.5rem;
+    }
+    .admin-table td:before {
+        position: absolute;
+        left: 1rem;
+        top: 0.75rem;
+        width: 45%;
+        white-space: nowrap;
+        font-weight: bold;
+        color: #64748b;
+        content: attr(data-label);
+    }
+}
+
+.status-select {
+    padding: 0.5rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    width: 100%;
+}
+
+.edit-btn {
+    background-color: #3b82f6;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.edit-btn:hover { background-color: #2563eb; }
+
+.save-btn {
+    background-color: #22c55e;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.save-btn:hover { background-color: #16a34a; }
+
+.cancel-btn {
+    background-color: #ef4444;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.cancel-btn:hover { background-color: #dc2626; }
+
+/* HTMX loading indicator — hidden by default, shown during in-flight requests */
+.htmx-indicator { display: none; }
+.htmx-request .htmx-indicator,
+.htmx-request.htmx-indicator { display: inline; }
