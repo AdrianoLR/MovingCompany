@@ -5,26 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FurnitureMan - Admin Login</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f9fafb;
-        }
-        .login-container {
-            max-width: 400px;
-            margin: 100px auto;
-            padding: 2rem;
-            background-color: white;
-            border-radius: 0.5rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        }
-        .error-message {
-            display: none;
-            color: #dc2626;
-            margin-top: 0.5rem;
-            font-size: 0.875rem;
-        }
-    </style>
+    <link rel="stylesheet" href="/static/css/login.css">
 </head>
 <body>
     <div class="login-container">
@@ -59,54 +40,6 @@
         </form>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Handle form submission
-            const loginForm = document.getElementById('login-form');
-            const errorMessage = document.getElementById('error-message');
-            
-            loginForm.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                
-                const email = document.getElementById('email').value;
-                const password = document.getElementById('password').value;
-                
-                try {
-                    // Send login request to our backend API
-                    const response = await fetch('/api/auth/login', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            email: email,
-                            password: password
-                        })
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (!response.ok || data.error) {
-                        // Show error message
-                        errorMessage.style.display = 'block';
-                        console.error('Login error:', data.error || 'Authentication failed');
-                    } else {
-                        // Store the token in localStorage or cookie for future authenticated requests
-                        localStorage.setItem('sb-auth-token', data.token);
-                        
-                        // Set cookie for server-side auth checks
-                        document.cookie = `sb-auth-token=${data.token}; path=/; max-age=10800`;
-                        
-                        // Successful login, redirect to admin page
-                        window.location.href = '/admin';
-                    }
-                } catch (err) {
-                    // Show error messag
-                    errorMessage.style.display = 'block';
-                    console.error('Login error:', err);
-                }
-            });
-        });
-    </script>
+    <script src="/static/js/login.js"></script>
 </body>
 </html>

@@ -172,6 +172,9 @@ func SetupHTTPRoutes(repo repository.BookingRepository, tokenService service.Tok
 	})
 
 	mux := http.NewServeMux()
+
+	// Serve static assets (CSS, JS) from the ./static directory
+	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("./static"))))
 	bookingHandler := NewBookingHandler(repo, tokenService)
 	authHandler := NewAuthHandler()
 

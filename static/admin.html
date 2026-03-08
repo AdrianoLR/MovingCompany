@@ -6,113 +6,22 @@
     <title>Admin Dashboard - Moving Company</title>
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        .admin-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 1rem;
-        }
-        .admin-table th, .admin-table td {
-            padding: 0.75rem;
-            border: 1px solid #e2e8f0;
-            text-align: left;
-        }
-        .admin-table th {
-            background-color: #f8fafc;
-            font-weight: bold;
-        }
-        .admin-table tr:nth-child(even) {
-            background-color: #f8fafc;
-        }
-        .admin-table tr:hover {
-            background-color: #f1f5f9;
-        }
-        /* Responsive Table Styles */
-        @media (max-width: 640px) {
-            .admin-table, .admin-table thead, .admin-table tbody, .admin-table th, .admin-table td, .admin-table tr {
-                display: block;
-            }
-            .admin-table thead {
-                display: none;
-            }
-            .admin-table tr {
-                margin-bottom: 1rem;
-                border-radius: 0.5rem;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-                background: #fff;
-                border: none;
-            }
-            .admin-table td {
-                border: none;
-                position: relative;
-                padding-left: 50%;
-                min-height: 2.5rem;
-                background: #f8fafc;
-                margin-bottom: 0.5rem;
-            }
-            .admin-table td:before {
-                position: absolute;
-                left: 1rem;
-                top: 0.75rem;
-                width: 45%;
-                white-space: nowrap;
-                font-weight: bold;
-                color: #64748b;
-                content: attr(data-label);
-            }
-        }
-        .status-select {
-            padding: 0.5rem;
-            border: 1px solid #e2e8f0;
-            border-radius: 4px;
-            width: 100%;
-        }
-        .edit-btn {
-            background-color: #3b82f6;
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .edit-btn:hover {
-            background-color: #2563eb;
-        }
-        .save-btn {
-            background-color: #22c55e;
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .save-btn:hover {
-            background-color: #16a34a;
-        }
-        .cancel-btn {
-            background-color: #ef4444;
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .cancel-btn:hover {
-            background-color: #dc2626;
-        }
-    </style>
+    <link rel="stylesheet" href="/static/css/admin.css">
 </head>
 <body class="bg-gray-100">
     <div class="container mx-auto px-4 py-8">
         <h1 class="text-3xl font-bold mb-8">Admin Dashboard</h1>
-        
+
         <!-- Generate Booking Link Section -->
         <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
             <h2 class="text-2xl font-bold mb-4">Generate Booking Link</h2>
             <div class="mb-4">
                 <label for="customer-email" class="block text-sm font-medium text-gray-700 mb-2">Customer Email</label>
                 <div class="flex">
-                    <input type="text" id="link" 
+                    <input type="text" id="link"
                            class="flex-1 p-2 border rounded-l focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                            placeholder="Generate link">
-                    <button onclick="generateBookingLink()" 
+                    <button onclick="generateBookingLink()"
                             class="bg-blue-600 text-white px-4 py-2 rounded-r hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                         Generate Link
                     </button>
@@ -120,7 +29,7 @@
             </div>
             <div class="mb-4">
                 <div class="flex">
-                    <button onclick="generateInvoice()" 
+                    <button onclick="generateInvoice()"
                             class="bg-green-600 text-white px-4 py-2 rounded-r hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
                         Generate Invoice
                     </button>
@@ -129,10 +38,10 @@
             <div id="link-result" class="mt-4 p-4 bg-gray-50 rounded hidden">
                 <div class="flex items-center">
                     <label class="font-medium text-gray-700 mr-2">Booking Link:</label>
-                    <input type="text" id="booking-link" readonly 
-                           class="flex-1 p-2 border rounded-l bg-white" 
+                    <input type="text" id="booking-link" readonly
+                           class="flex-1 p-2 border rounded-l bg-white"
                            onclick="this.select()">
-                    <button onclick="copyToClipboard('booking-link')" 
+                    <button onclick="copyToClipboard('booking-link')"
                             class="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-r">
                         Copy
                     </button>
@@ -140,7 +49,7 @@
                 <p class="mt-2 text-sm text-gray-500">This link will expire in 24 hours.</p>
             </div>
         </div>
-        
+
         <!-- Bookings Table -->
         <div class="bg-white rounded-lg shadow-lg p-6">
             <h2 class="text-2xl font-bold mb-4">Bookings Management</h2>
@@ -152,12 +61,11 @@
                 </select>
             </div>
             <div class="overflow-x-auto">
-                <div id="bookings-table" 
-                     hx-get="/api/bookings" 
+                <div id="bookings-table"
+                     hx-get="/api/bookings/"
                      hx-trigger="load"
                      hx-swap="innerHTML">
                     <p>Loading bookings...</p>
-                    <!-- Bookings will be loaded here -->
                 </div>
             </div>
         </div>
@@ -170,28 +78,28 @@
             <form id="invoiceForm">
                 <div class="mb-4">
                     <label for="totalAmount" class="block text-sm font-medium text-gray-700 mb-2">Total Amount (AUD)</label>
-                    <input type="number" id="totalAmount" step="0.01" min="0" 
+                    <input type="number" id="totalAmount" step="0.01" min="0"
                            class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                            placeholder="340.00" required>
                 </div>
                 <div class="mb-4">
                     <label for="hoursUsed" class="block text-sm font-medium text-gray-700 mb-2">Hours Used</label>
-                    <input type="number" id="hoursUsed" step="0.5" min="0" 
+                    <input type="number" id="hoursUsed" step="0.5" min="0"
                            class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                            placeholder="2.0" required>
                 </div>
                 <div class="mb-4">
                     <label for="jobDescription" class="block text-sm font-medium text-gray-700 mb-2">Job Description (Optional)</label>
-                    <textarea id="jobDescription" rows="3" 
+                    <textarea id="jobDescription" rows="3"
                               class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                               placeholder="Flat pack delivery no required assembly"></textarea>
                 </div>
                 <div class="flex justify-end space-x-3">
-                    <button type="button" onclick="closeInvoiceModal()" 
+                    <button type="button" onclick="closeInvoiceModal()"
                             class="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400">
                         Cancel
                     </button>
-                    <button type="submit" 
+                    <button type="submit"
                             class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
                         Generate Invoice
                     </button>
@@ -200,560 +108,6 @@
         </div>
     </div>
 
-    <script>
-        // Function to generate a booking link
-        function generateBookingLink() {
-            // Show loading state
-            const generateBtn = document.querySelector('button[onclick="generateBookingLink()"]');
-            const originalBtnText = generateBtn.textContent;
-            generateBtn.disabled = true;
-            generateBtn.innerHTML = '<span class="animate-spin">⏳</span> Generating...';
-            
-            // Call the API to generate the link
-            fetch('/api/generate-link', {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-            })
-            .then(response => response.json())
-            .then(data => {
-                // Show the result
-                const resultDiv = document.getElementById('link-result');
-                const linkInput = document.getElementById('booking-link');
-                
-                linkInput.value = data.booking_url;
-                resultDiv.classList.remove('hidden');
-                
-                // Auto-select the link for easy copying
-                linkInput.select();
-                
-                // Show success message
-                alert('Booking link generated successfully!');
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Failed to generate booking link. Please try again.');
-            })
-            .finally(() => {
-                // Reset button state
-                generateBtn.disabled = false;
-                generateBtn.textContent = originalBtnText;
-            });
-        }
-        function generateInvoice() {
-            const generateBtn = document.querySelector('button[onclick="generateInvoice()"]');
-            generateBtn.disabled = true;
-            const originalBtnText = generateBtn.textContent;
-            generateBtn.textContent = 'Generating...';
-
-            fetch('/admin/generate-invoice', {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/pdf',
-                },
-            })
-            .then(response => {
-                if (!response.ok) throw new Error('Failed to generate invoice');
-                return response.blob();
-            })
-            .then(blob => {
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = 'invoice.pdf';
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-                window.URL.revokeObjectURL(url);
-            })
-            .catch(error => {
-                alert('Failed to generate invoice. Please try again.');
-                console.error(error);
-            })
-            .finally(() => {
-                generateBtn.disabled = false;
-                generateBtn.textContent = originalBtnText;
-            });
-        }
-
-        // Global variable to store current booking ID
-        let currentBookingId = null;
-
-        // Function to show invoice modal for a specific booking
-        function generateBookingInvoice(bookingId) {
-            currentBookingId = bookingId;
-            document.getElementById('invoiceModal').classList.remove('hidden');
-            // Pre-fill with default values
-            document.getElementById('totalAmount').value = '340.00';
-            document.getElementById('hoursUsed').value = '2.0';
-            document.getElementById('jobDescription').value = 'Flat pack delivery no required assembly';
-        }
-
-        // Function to close the invoice modal
-        function closeInvoiceModal() {
-            document.getElementById('invoiceModal').classList.add('hidden');
-            currentBookingId = null;
-        }
-
-        // Function to handle invoice form submission
-        function setupInvoiceFormHandler() {
-            const form = document.getElementById('invoiceForm');
-            if (form) {
-                form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const totalAmount = document.getElementById('totalAmount').value;
-            const hoursUsed = document.getElementById('hoursUsed').value;
-            const jobDescription = document.getElementById('jobDescription').value;
-            
-            if (!totalAmount || !hoursUsed) {
-                alert('Please fill in all required fields');
-                return;
-            }
-
-            // Store booking ID before closing modal
-            const bookingId = currentBookingId;
-            
-            // Close modal and show generating state
-            closeInvoiceModal();
-            
-            const invoiceBtn = document.querySelector(`button[onclick="generateBookingInvoice('${bookingId}')"]`);
-            if (!invoiceBtn) {
-                alert('Error: Could not find invoice button');
-                return;
-            }
-            
-            const originalBtnText = invoiceBtn.textContent;
-            invoiceBtn.disabled = true;
-            invoiceBtn.textContent = 'Generating...';
-
-            // Generate invoice with custom parameters
-            const params = new URLSearchParams({
-                booking_id: bookingId,
-                total_amount: totalAmount,
-                hours_used: hoursUsed,
-                job_description: jobDescription
-            });
-
-            fetch(`/admin/generate-invoice?${params}`, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/pdf',
-                },
-            })
-            .then(response => {
-                if (!response.ok) throw new Error('Failed to generate invoice');
-                return response.blob();
-            })
-            .then(blob => {
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `invoice-${bookingId}.pdf`;
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-                window.URL.revokeObjectURL(url);
-            })
-            .catch(error => {
-                alert('Failed to generate invoice. Please try again.');
-                console.error(error);
-            })
-            .finally(() => {
-                invoiceBtn.disabled = false;
-                invoiceBtn.textContent = originalBtnText;
-            });
-                });
-            }
-        }
-        
-        // Function to copy text to clipboard
-        function copyToClipboard(elementId) {
-            const element = document.getElementById(elementId);
-            element.select();
-            document.execCommand('copy');
-            
-            // Show feedback
-            const copyBtn = element.nextElementSibling;
-            const originalText = copyBtn.textContent;
-            copyBtn.textContent = 'Copied!';
-            setTimeout(() => {
-                copyBtn.textContent = originalText;
-            }, 2000);
-        }
-        
-        // Sort helper
-        function sortBookings(bookings, sortBy) {
-            const bookingsCopy = [...bookings];
-            if (sortBy === 'name') {
-                bookingsCopy.sort((a, b) => (a.customer_name || '').localeCompare(b.customer_name || ''));
-            } else if (sortBy === 'status') {
-                bookingsCopy.sort((a, b) => (a.status - b.status) || (a.customer_name || '').localeCompare(b.customer_name || ''));
-            }
-            return bookingsCopy;
-        }
-
-        // Convert a UTC date string to a datetime-local input value in Perth time (UTC+8, no DST)
-        function toLocalDatetimeValue(dateString) {
-            if (!dateString) return '';
-            const date = new Date(dateString);
-            if (isNaN(date.getTime())) return '';
-            const parts = new Intl.DateTimeFormat('en-CA', {
-                timeZone: 'Australia/Perth',
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false
-            }).formatToParts(date);
-            const p = {};
-            parts.forEach(({type, value}) => p[type] = value);
-            return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`;
-        }
-
-        // Convert a Perth datetime-local value ("YYYY-MM-DDTHH:mm") to a UTC ISO string for the server
-        function perthInputToUTC(localDatetimeStr) {
-            if (!localDatetimeStr) return '';
-            // Append Perth offset (+08:00) so the Date constructor interprets it correctly
-            const date = new Date(localDatetimeStr + ':00+08:00');
-            return date.toISOString();
-        }
-
-        // Helper function to format date in UTC+8 (Perth time)
-        function formatDateUTC8(dateString) {
-            if (!dateString) return '';
-            const date = new Date(dateString);
-            if (isNaN(date.getTime())) return '';
-            
-            // Format in Perth timezone (UTC+8)
-            return date.toLocaleString('en-AU', {
-                timeZone: 'Australia/Perth',
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false
-            });
-        }
-
-        // Global sort state
-        let currentSort = 'name';
-        function getSortSelect() {
-            return document.getElementById('sort-bookings');
-        }
-        function getBookingsTable() {
-            return document.getElementById('bookings-table');
-        }
-        function getCurrentBookings() {
-            const bookingsTable = getBookingsTable();
-            let bookings = [];
-            try {
-                bookings = JSON.parse(bookingsTable.dataset.bookings || '[]');
-            } catch {}
-            return bookings;
-        }
-        function setCurrentBookings(bookings) {
-            const bookingsTable = getBookingsTable();
-            bookingsTable.dataset.bookings = JSON.stringify(bookings);
-        }
-        function handleSortChange() {
-            const sortValue = getSortSelect().value;
-            currentSort = sortValue;
-            const bookings = getCurrentBookings();
-            getBookingsTable().innerHTML = formatBookingTable(bookings);
-        }
-        // Initialize sort on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            const sortSelect = getSortSelect();
-            if (sortSelect) {
-                currentSort = sortSelect.value;
-            }
-            // Setup invoice form handler
-            setupInvoiceFormHandler();
-        });
-
-        // Function to format the booking table
-        function formatBookingTable(bookings) {
-            bookings = sortBookings(bookings, currentSort);
-            // Get status display name
-            function getStatusText(status) {
-                switch (status) {
-                    case 0: return "Pending";
-                    case 1: return "Confirmed";
-                    case 2: return "In Progress";
-                    case 3: return "Completed";
-                    case 4: return "Cancelled";
-                    default: return "Unknown";
-                }
-            }
-        
-            return `
-                <table class="admin-table">
-                    <thead>
-                        <tr>
-                            <th>Customer</th>
-                            <th>Email</th>
-                            <th>Phone</th>
-                            <th>Pickup Address</th>
-                            <th>Drop Address</th>
-                            <th>Pickup Date</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${bookings.map(booking => {
-                            const isEditing = booking.isEditing || false;
-                            const pickupDate = new Date(booking.pickup_date);
-                            const formattedDate = !isNaN(pickupDate.getTime())
-                                ? toLocalDatetimeValue(booking.pickup_date)
-                                : toLocalDatetimeValue(new Date().toISOString());
-                            
-                            return `
-                            <tr id="booking-row-${booking.user_id}" data-booking-id="${booking.user_id}" data-pickup-date="${booking.pickup_date}">
-                                <td data-label="Customer">
-                                    ${isEditing 
-                                        ? `<input type="text" class="w-full p-2 border rounded" value="${booking.customer_name}">`
-                                        : booking.customer_name}
-                                </td>
-                                <td data-label="Email">
-                                    ${isEditing 
-                                        ? `<input type="email" class="w-full p-2 border rounded" value="${booking.email}">`
-                                        : booking.email}
-                                </td>
-                                <td data-label="Phone">
-                                    ${isEditing 
-                                        ? `<input type="tel" class="w-full p-2 border rounded" value="${booking.phone}">`
-                                        : booking.phone}
-                                </td>
-                                <td data-label="Pickup Address">
-                                    ${isEditing 
-                                        ? `<input type="text" class="w-full p-2 border rounded" value="${booking.pickup_address}">`
-                                        : booking.pickup_address}
-                                </td>
-                                <td data-label="Drop Address">
-                                    ${isEditing 
-                                        ? `<input type="text" class="w-full p-2 border rounded" value="${booking.drop_address}">`
-                                        : booking.drop_address}
-                                </td>
-                                <td data-label="Pickup Date">
-                                    ${isEditing 
-                                        ? `<input type="datetime-local" class="w-full p-2 border rounded" value="${formattedDate}">`
-                                        : formatDateUTC8(booking.pickup_date)}
-                                </td>
-                                <td data-label="Status">
-                                    <select class="status-select"
-                                        ${!isEditing ? `onchange=\"updateStatus('${booking.user_id}', this.value)\"` : ''}
-                                        ${!isEditing ? 'disabled' : ''}>
-                                        <option value="0" ${booking.status === 0 ? 'selected' : ''}>Pending</option>
-                                        <option value="1" ${booking.status === 1 ? 'selected' : ''}>Confirmed</option>
-                                        <option value="2" ${booking.status === 2 ? 'selected' : ''}>In Progress</option>
-                                        <option value="3" ${booking.status === 3 ? 'selected' : ''}>Completed</option>
-                                        <option value="4" ${booking.status === 4 ? 'selected' : ''}>Cancelled</option>
-                                    </select>
-                                </td>
-                                <td data-label="Actions">
-                                    ${isEditing 
-                                        ? `
-                                            <button class="save-btn mr-2" onclick="saveBooking('${booking.user_id}')">Save</button>
-                                            <button class="cancel-btn" onclick="cancelEdit('${booking.user_id}')">Cancel</button>
-                                        `
-                                        : `
-                                            <button class="edit-btn mr-2" onclick="editBooking('${booking.user_id}')">Edit</button>
-                                            <button class="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700" onclick="generateBookingInvoice('${booking.user_id}')">Invoice</button>
-                                        `
-                                    }
-                                </td>
-                            </tr>
-                        `}).join('')}
-                    </tbody>
-                </table>
-            `;
-        }
-
-        // Function to edit a booking
-        function editBooking(id) {
-            const bookingsTable = document.getElementById('bookings-table');
-            try {
-                const bookings = JSON.parse(bookingsTable.dataset.bookings || '[]');
-                const updatedBookings = bookings.map(booking => ({
-                    ...booking,
-                    isEditing: booking.user_id === id
-                }));
-                bookingsTable.dataset.bookings = JSON.stringify(updatedBookings);
-                bookingsTable.innerHTML = formatBookingTable(updatedBookings);
-            } catch (error) {
-                console.error('Error editing booking:', error);
-                // If there's an error, just refresh the table
-                document.getElementById('bookings-table').dispatchEvent(new Event('htmx:trigger'));
-            }
-        }
-
-
-
-        // Function to save booking changes
-        function saveBooking(id) {
-            const row = document.getElementById(`booking-row-${id}`);
-            const inputs = row.getElementsByTagName('input');
-            const statusSelect = row.querySelector('select');
-            const dateInput = inputs[5].value;
-
-            const updatedBooking = {
-                user_id: id,
-                customer_name: inputs[0].value,
-                email: inputs[1].value,
-                phone: inputs[2].value,
-                pickup_address: inputs[3].value,
-                drop_address: inputs[4].value,
-                pickup_date: perthInputToUTC(dateInput), // convert Perth local time to UTC for storage
-                status: parseInt(statusSelect.value, 10)
-            };
-
-            fetch(`/api/bookings/${id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(updatedBooking)
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                // Fetch the latest bookings and update the table
-                return fetch('/api/bookings');
-            })
-            .then(response => response.json())
-            .then(bookings => {
-                setCurrentBookings(bookings);
-                getBookingsTable().innerHTML = formatBookingTable(bookings);
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Error updating booking');
-            });
-        }
-
-        // On initial load, sort table after bookings are loaded
-        document.body.addEventListener('htmx:afterRequest', function(evt) {
-            if (evt.detail.target.id === 'bookings-table' && evt.detail.successful) {
-                try {
-                    let bookings = [];
-                    // Try to parse JSON from XHR response
-                    try {
-                        bookings = JSON.parse(evt.detail.xhr.response);
-                    } catch {}
-                    if (!bookings || bookings.length === 0) {
-                        evt.detail.target.innerHTML = '<p class="text-gray-500 p-4">No bookings found in the database.</p>';
-                        return;
-                    }
-                    evt.detail.target.dataset.bookings = JSON.stringify(bookings);
-                    evt.detail.target.innerHTML = formatBookingTable(bookings);
-                } catch (error) {
-                    evt.detail.target.innerHTML = '<p class="text-red-500 p-4">Error loading bookings.</p>';
-                }
-            }
-        });
-
-        // Function to cancel editing
-        function cancelEdit(id) {
-            // Reset the editing state in the data
-            const bookingsTable = document.getElementById('bookings-table');
-            try {
-                const bookings = JSON.parse(bookingsTable.dataset.bookings || '[]');
-                const updatedBookings = bookings.map(booking => ({
-                    ...booking,
-                    isEditing: false
-                }));
-                bookingsTable.dataset.bookings = JSON.stringify(updatedBookings);
-                
-                // Update the UI to show the non-editing state
-                bookingsTable.innerHTML = formatBookingTable(updatedBookings);
-            } catch (error) {
-                console.error('Error canceling edit:', error);
-                // If there's an error, just refresh the table
-                document.getElementById('bookings-table').dispatchEvent(new Event('htmx:trigger'));
-            }
-        }
-
-        // Function to update status
-        function updateStatus(id, status) {
-            const row = document.getElementById(`booking-row-${id}`);
-            const cells = row.getElementsByTagName('td');
-            // Use the ISO date from the data attribute for reliability
-            const pickupDateIso = row.dataset.pickupDate;
-            const updatedBooking = {
-                user_id: id,
-                customer_name: cells[0].textContent,
-                email: cells[1].textContent,
-                phone: cells[2].textContent,
-                pickup_address: cells[3].textContent,
-                drop_address: cells[4].textContent,
-                pickup_date: pickupDateIso,
-                status: parseInt(status, 10)
-            };
-
-            fetch(`/api/booking?id=${id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(updatedBooking)
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-                // Refresh the table
-                document.getElementById('bookings-table').dispatchEvent(new Event('htmx:trigger'));
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Error updating status');
-            });
-        }
-
-        // Handle the bookings table response
-        document.body.addEventListener('htmx:afterRequest', function(evt) {
-            if (evt.detail.target.id === 'bookings-table' && evt.detail.successful) {
-                try {
-                    const bookings = JSON.parse(evt.detail.xhr.response);
-                    
-                    // Show a message if no bookings are found
-                    if (!bookings || bookings.length === 0) {
-                        evt.detail.target.innerHTML = '<p class="text-gray-500 p-4">No bookings found in the database.</p>';
-                        return;
-                    }
-                    
-                    evt.detail.target.dataset.bookings = JSON.stringify(bookings);
-                    evt.detail.target.innerHTML = formatBookingTable(bookings);
-                } catch (error) {
-                    console.error('Error parsing booking data:', error);
-                    evt.detail.target.innerHTML = '<p class="text-red-500 p-4">Error loading bookings. Response was: ' + 
-                        evt.detail.xhr.response + '</p>';
-                }
-            }
-        });
-
-        // Add an error handler
-        document.body.addEventListener('htmx:responseError', function(evt) {
-            if (evt.detail.target.id === 'bookings-table') {
-                console.error('HTMX request error:', evt.detail);
-                evt.detail.target.innerHTML = '<p class="text-red-500 p-4">Error loading bookings: ' + 
-                    evt.detail.error + '</p>';
-            }
-        });
-
-        // Force trigger the load on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            const bookingsTable = document.getElementById('bookings-table');
-            if (bookingsTable) {
-                bookingsTable.dispatchEvent(new Event('htmx:trigger'));
-            }
-        });
-    </script>
+    <script src="/static/js/admin.js"></script>
 </body>
 </html>
