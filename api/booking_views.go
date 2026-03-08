@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-// perthLocation is loaded once at startup; falls back to a fixed UTC+8 offset.
+// perthLocation is loaded once at startup; falls back to a fixed UTC+8 offset
 var perthLocation *time.Location
 
 func init() {

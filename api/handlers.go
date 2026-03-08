@@ -107,7 +107,9 @@ func (h *BookingHandler) CreateBooking(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pickupDate, err := time.Parse("2006-01-02T15:04:05", req.PickupDate)
+	// Perth is UTC+8 with no DST — use a fixed zone so tzdata is not required
+	perthLoc := time.FixedZone("AWST", 8*60*60)
+	pickupDate, err := time.ParseInLocation("2006-01-02T15:04:05", req.PickupDate, perthLoc)
 	if err != nil {
 		http.Error(w, "Invalid pickup date format. Use YYYY-MM-DDThh:mm:ss", http.StatusBadRequest)
 		return

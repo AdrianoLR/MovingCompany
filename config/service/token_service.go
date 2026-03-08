@@ -40,7 +40,7 @@ func NewJWTTokenService(secretKey string, repo repository.TokenRepository) *JWTT
 	}
 }
 
-// hashToken returns the SHA-256 hex digest of the given JWT string.
+// hashToken returns the SHA-256 hex digest of the given JWT string
 func hashToken(tokenString string) string {
 	sum := sha256.Sum256([]byte(tokenString))
 	return hex.EncodeToString(sum[:])

@@ -5,7 +5,7 @@ import (
 	"MovingCompanyGo/models"
 	"context"
 	"encoding/json"
-	"log" // P3: needed to log the cleanup error if the rollback delete also fails
+	"log"
 	"time"
 
 	supabase "github.com/supabase-community/supabase-go"

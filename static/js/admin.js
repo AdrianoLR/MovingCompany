@@ -137,8 +137,6 @@ function handleSortChange() {
     });
 }
 
-// ─── Init ─────────────────────────────────────────────────────────────────────
-
 document.addEventListener('DOMContentLoaded', function() {
     setupInvoiceFormHandler();
 });

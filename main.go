@@ -20,7 +20,6 @@ func main() {
 		log.Printf("Warning: .env file not found, relying on system environment variables")
 	}
 
-	// R8: InitSupabase no longer calls godotenv.Load itself, so there is no double-load.
 	// It now returns an error for missing credentials instead of panicking (S2).
 	if err := config.InitSupabase(); err != nil {
 		log.Fatalf("Failed to initialise Supabase client: %v", err)

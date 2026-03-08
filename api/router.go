@@ -12,8 +12,6 @@ import (
 	"time"
 )
 
-// ---- Rate Limiter (S10) -------------------------------------------------------
-
 // rateLimiter implements a simple per-IP sliding-window rate limiter.
 type rateLimiter struct {
 	mu       sync.Mutex             // protects the requests map against concurrent writes

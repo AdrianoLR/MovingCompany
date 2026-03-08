@@ -34,7 +34,7 @@ func InitSupabase() error {
 
 	SupabaseClient = client
 
-	// Admin client with service role key (bypasses RLS)
+	// Admin client with service role key (bypasses RLS )
 	if supabaseKey != "" {
 		adminClient, err := supabase.NewClient(supabaseUrl, supabaseKey,
 			&supabase.ClientOptions{

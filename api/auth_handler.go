@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-// AuthHandler handles authentication related requests
+// AuthHandler handles authentication related request
 type AuthHandler struct{}
 
 // NewAuthHandler creates a new instance of AuthHandler

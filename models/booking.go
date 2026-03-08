@@ -24,7 +24,10 @@ type Booking struct {
 }
 
 func parseTime(s string) (time.Time, error) {
-	if t, err := time.Parse(time.RFC3339, s); err == nil { // RFC3339 covers "2006-01-02T15:04:05Z07:00"
+	if t, err := time.Parse(time.RFC3339Nano, s); err == nil { // handles "2006-01-02T15:04:05.999Z" (JS toISOString output)
+		return t, nil
+	}
+	if t, err := time.Parse(time.RFC3339, s); err == nil { // handles "2006-01-02T15:04:05Z07:00"
 		return t, nil
 	}
 	return time.Parse("2006-01-02T15:04:05", s) // fallback for timestamps without timezone info
@@ -193,7 +196,7 @@ const (
 // NewBooking creates a new Booking with default values set.
 func NewBooking() *Booking {
 	return &Booking{
-		BookingID: uuid.New().String(), // R5: field renamed from UserID to BookingID; json:"user_id" tag unchanged
+		BookingID: uuid.New().String(),
 		Status:    int(StatusPending),
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),

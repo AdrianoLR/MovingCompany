@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             if (response.ok) {
-                // Cookie is set server-side via HttpOnly
+                // Cookie is set server-side via HttpOnly //
                 window.location.href = '/admin';
             } else {
                 errorMessage.style.display = 'block';

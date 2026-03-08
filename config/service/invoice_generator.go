@@ -11,7 +11,7 @@ import (
 	"github.com/go-pdf/fpdf"
 )
 
-// invoiceConfig holds business details read from environment variables.
+// invoiceConfig holds business details read from environment variables
 type invoiceConfig struct {
 	companyName string // display name printed at the top of every invoice
 	abn         string // Australian Business Number — legally required on invoices

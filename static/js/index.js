@@ -6,7 +6,7 @@ document.getElementById('bookingForm').addEventListener('submit', function(e) {
 
     const pickupDate = new Date(document.getElementById('pickup_date').value);
 
-    // Format to "YYYY-MM-DDThh:mm:ss" as expected by the server
+    // Format to "YYYY-MM-DDThh:mm:ss" as expected by the serve
     const formatDate = (date) =>
         date.getFullYear() + '-' +
         String(date.getMonth() + 1).padStart(2, '0') + '-' +

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-AU">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -394,6 +394,33 @@
             return bookingsCopy;
         }
 
+        // Convert a UTC date string to a datetime-local input value in Perth time (UTC+8, no DST)
+        function toLocalDatetimeValue(dateString) {
+            if (!dateString) return '';
+            const date = new Date(dateString);
+            if (isNaN(date.getTime())) return '';
+            const parts = new Intl.DateTimeFormat('en-CA', {
+                timeZone: 'Australia/Perth',
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            }).formatToParts(date);
+            const p = {};
+            parts.forEach(({type, value}) => p[type] = value);
+            return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`;
+        }
+
+        // Convert a Perth datetime-local value ("YYYY-MM-DDTHH:mm") to a UTC ISO string for the server
+        function perthInputToUTC(localDatetimeStr) {
+            if (!localDatetimeStr) return '';
+            // Append Perth offset (+08:00) so the Date constructor interprets it correctly
+            const date = new Date(localDatetimeStr + ':00+08:00');
+            return date.toISOString();
+        }
+
         // Helper function to format date in UTC+8 (Perth time)
         function formatDateUTC8(dateString) {
             if (!dateString) return '';
@@ -481,9 +508,9 @@
                         ${bookings.map(booking => {
                             const isEditing = booking.isEditing || false;
                             const pickupDate = new Date(booking.pickup_date);
-                            const formattedDate = !isNaN(pickupDate.getTime()) 
-                                ? booking.pickup_date.slice(0, 16)
-                                : new Date().toISOString().slice(0, 16);
+                            const formattedDate = !isNaN(pickupDate.getTime())
+                                ? toLocalDatetimeValue(booking.pickup_date)
+                                : toLocalDatetimeValue(new Date().toISOString());
                             
                             return `
                             <tr id="booking-row-${booking.user_id}" data-booking-id="${booking.user_id}" data-pickup-date="${booking.pickup_date}">
@@ -581,7 +608,7 @@
                 phone: inputs[2].value,
                 pickup_address: inputs[3].value,
                 drop_address: inputs[4].value,
-                pickup_date: dateInput,
+                pickup_date: perthInputToUTC(dateInput), // convert Perth local time to UTC for storage
                 status: parseInt(statusSelect.value, 10)
             };
 

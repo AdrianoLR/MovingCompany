@@ -15,7 +15,7 @@ type TokenRepository interface {
 	MarkAsUsed(ctx context.Context, id string) error
 }
 
-// SupabaseTokenRepository is the Supabase-backed implementation of TokenRepository.
+// SupabaseTokenRepository is the Supabase-backed implementation of TokenRepository
 type SupabaseTokenRepository struct {
 	client *supabase.Client
 	table  string

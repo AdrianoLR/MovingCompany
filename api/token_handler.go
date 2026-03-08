@@ -10,7 +10,7 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"os"   // S7: used to read BASE_URL from environment instead of hardcoding localhost
+	"os"
 	"time"
 )
 
@@ -45,7 +45,7 @@ func (h *TokenHandler) GenerateBookingLink(w http.ResponseWriter, r *http.Reques
 
 	// Pack both the token ID and the signed JWT into a compact, URL-safe payload
 	tokenData := map[string]string{
-		"id":    tokenID,    // used to look up the DB record on validation
+		"id":    tokenID,     // used to look up the DB record on validation
 		"token": tokenString, // the signed JWT that the booking form will submit
 	}
 
@@ -155,7 +155,7 @@ func (h *TokenHandler) RenderBookingForm(w http.ResponseWriter, r *http.Request)
 
 	tmpl, err := template.ParseFiles("static/index.html")
 	if err != nil {
-		log.Printf("RenderBookingForm: template parse failed: %v", err) // S8: full error to logs
+		log.Printf("RenderBookingForm: template parse failed: %v", err)             // S8: full error to logs
 		http.Error(w, "Error loading booking form", http.StatusInternalServerError) // S8: generic to client
 		return
 	}
@@ -170,7 +170,7 @@ func (h *TokenHandler) RenderBookingForm(w http.ResponseWriter, r *http.Request)
 	}
 
 	if err := tmpl.Execute(w, data); err != nil {
-		log.Printf("RenderBookingForm: template execute failed: %v", err) // S8: full error to logs
+		log.Printf("RenderBookingForm: template execute failed: %v", err)             // S8: full error to logs
 		http.Error(w, "Error rendering booking form", http.StatusInternalServerError) // S8: generic to client
 		return
 	}
