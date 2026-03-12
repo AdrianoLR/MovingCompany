@@ -1,4 +1,0 @@
-{
-    "kiroAgent.configureMCP": "Disabled",
-    "semgrep.scan.onlyGitDirty": false
-}
